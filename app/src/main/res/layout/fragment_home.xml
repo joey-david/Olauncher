@@ -34,15 +34,70 @@
         android:visibility="gone"
         tools:visibility="visible">
 
-        <TextClock
-            android:id="@+id/clock"
-            style="@style/TextDefault"
+        <!-- One clock, or two side by side, each with its city under it -->
+        <LinearLayout
+            android:id="@+id/clocksRow"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:fontFamily="sans-serif-light"
-            android:format12Hour="h:mm"
-            android:textSize="@dimen/time_size"
-            tools:text="02:34" />
+            android:orientation="horizontal">
+
+            <LinearLayout
+                android:id="@+id/clockBox"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+                <TextClock
+                    android:id="@+id/clock"
+                    style="@style/TextDefault"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="sans-serif-light"
+                    android:format12Hour="h:mm"
+                    android:textSize="@dimen/time_size"
+                    tools:text="02:34" />
+
+                <TextView
+                    android:id="@+id/clockCity"
+                    style="@style/TextDefault"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:paddingHorizontal="3dp"
+                    android:textSize="@dimen/date_size"
+                    android:visibility="gone"
+                    tools:text="Paris"
+                    tools:visibility="visible" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/clock2Box"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="28dp"
+                android:orientation="vertical"
+                android:visibility="gone"
+                tools:visibility="visible">
+
+                <TextClock
+                    android:id="@+id/clock2"
+                    style="@style/TextDefault"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="sans-serif-light"
+                    android:format12Hour="h:mm"
+                    android:textSize="@dimen/time_size"
+                    tools:text="09:34" />
+
+                <TextView
+                    android:id="@+id/clock2City"
+                    style="@style/TextDefault"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:paddingHorizontal="3dp"
+                    android:textSize="@dimen/date_size"
+                    tools:text="Tokyo" />
+            </LinearLayout>
+        </LinearLayout>
 
         <TextView
             android:id="@+id/date"
@@ -55,15 +110,6 @@
             android:textSize="@dimen/date_size"
             tools:text="Thu, 30 Dec" />
 
-        <TextClock
-            android:id="@+id/clock2"
-            style="@style/TextDefault"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:paddingHorizontal="3dp"
-            android:textSize="@dimen/date_size"
-            android:visibility="gone"
-            tools:text="Tokyo 09:34" />
     </LinearLayout>
 
     <!-- Screen time-->

@@ -10,6 +10,7 @@ import android.os.Build
 import android.os.Bundle
 import android.view.Gravity
 import android.view.LayoutInflater
+import android.util.TypedValue
 import android.view.View
 import android.view.ViewGroup
 import android.view.WindowInsets
@@ -20,6 +21,7 @@ import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.os.bundleOf
 import androidx.core.view.isVisible
+import androidx.core.view.updatePadding
 import androidx.core.view.setPadding
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
@@ -54,6 +56,7 @@ import app.olauncher.listener.ViewSwipeTouchListener
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import java.util.TimeZone
 
 class HomeFragment : BaseFragment(), View.OnClickListener, View.OnLongClickListener {
 
@@ -301,6 +304,8 @@ class HomeFragment : BaseFragment(), View.OnClickListener, View.OnLongClickListe
         val verticalGravity = if (prefs.homeBottomAlignment) Gravity.BOTTOM else Gravity.CENTER_VERTICAL
         binding.homeAppsLayout.gravity = horizontalGravity or verticalGravity
         binding.dateTimeLayout.gravity = horizontalGravity
+        binding.clockBox.gravity = horizontalGravity
+        binding.clock2Box.gravity = horizontalGravity
         binding.focusPanel.focusRoot.gravity = horizontalGravity
         binding.focusPanel.focusToggle.gravity = horizontalGravity
         binding.homeApp1.gravity = horizontalGravity
@@ -313,11 +318,26 @@ class HomeFragment : BaseFragment(), View.OnClickListener, View.OnLongClickListe
         binding.homeApp8.gravity = horizontalGravity
     }
 
+    /** With a second time zone the two clocks sit side by side, a little smaller, each over its city. */
+    private fun showClocks() {
+        val zone = prefs.secondClockZone
+        val dual = zone.isNotEmpty() && binding.clock.isVisible
+        binding.clock2Box.isVisible = dual
+        binding.clockCity.isVisible = dual
+        val size = resources.getDimension(R.dimen.time_size) * if (dual) 0.8f else 1f
+        for (clock in listOf(binding.clock, binding.clock2)) clock.setTextSize(TypedValue.COMPLEX_UNIT_PX, size)
+        binding.clocksRow.updatePadding(bottom = if (dual) (8 * resources.displayMetrics.density).toInt() else 0)
+        if (!dual) return
+        binding.clock2.timeZone = zone
+        binding.clockCity.text = zoneCity(TimeZone.getDefault().id)
+        binding.clock2City.text = zoneCity(zone)
+    }
+
     private fun populateDateTime() {
         binding.dateTimeLayout.isVisible = prefs.dateTimeVisibility != Constants.DateTime.OFF
         binding.clock.isVisible = Constants.DateTime.isTimeVisible(prefs.dateTimeVisibility)
         binding.date.isVisible = Constants.DateTime.isDateVisible(prefs.dateTimeVisibility)
-        binding.clock2.showSecondClock(prefs.secondClockZone)
+        showClocks()
 
 //        var dateText = SimpleDateFormat("EEE, d MMM", Locale.getDefault()).format(Date())
         val dateFormat = SimpleDateFormat("EEE, d MMM", Locale.getDefault())

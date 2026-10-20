@@ -6,9 +6,7 @@ import android.widget.ArrayAdapter
 import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.ListView
-import android.widget.TextClock
 import androidx.appcompat.app.AlertDialog
-import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
 import app.olauncher.R
 import java.util.TimeZone
@@ -16,14 +14,6 @@ import java.util.TimeZone
 /** "America/Sao_Paulo" -> "Sao Paulo". */
 fun zoneCity(id: String): String = id.substringAfterLast('/').replace('_', ' ')
 
-fun TextClock.showSecondClock(zoneId: String) {
-    isVisible = zoneId.isNotEmpty()
-    if (zoneId.isEmpty()) return
-    val label = zoneCity(zoneId).replace("'", "''")
-    timeZone = zoneId
-    format12Hour = "'$label' h:mm a"
-    format24Hour = "'$label' HH:mm"
-}
 
 fun Fragment.showSecondClockPicker(onPicked: (String) -> Unit) {
     val context = requireContext()
