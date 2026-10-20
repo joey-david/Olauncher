@@ -10,11 +10,6 @@ import android.content.pm.ApplicationInfo
 import android.content.pm.LauncherApps
 import android.content.res.Configuration
 import android.content.res.Configuration.UI_MODE_NIGHT_YES
-import android.graphics.Bitmap
-import android.graphics.BitmapFactory
-import android.graphics.Canvas
-import android.graphics.Matrix
-import android.graphics.Paint
 import android.graphics.Point
 import android.net.Uri
 import android.os.Build
@@ -43,15 +38,10 @@ import app.olauncher.data.Prefs
 import app.olauncher.data.shortcutIdentity
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import org.json.JSONObject
-import java.io.InputStream
-import java.net.HttpURLConnection
-import java.net.URL
 import java.text.Collator
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
-import java.util.Scanner
 import kotlin.math.pow
 import kotlin.math.sqrt
 
@@ -74,8 +64,8 @@ suspend fun getAppsList(
         val appList: MutableList<AppModel> = mutableListOf()
 
         try {
-            if (!Prefs(context).hiddenAppsUpdated) upgradeHiddenApps(Prefs(context))
-            val hiddenApps = Prefs(context).hiddenApps
+            if (!prefs.hiddenAppsUpdated) upgradeHiddenApps(prefs)
+            val hiddenApps = prefs.hiddenApps
 
             val userManager = context.getSystemService(Context.USER_SERVICE) as UserManager
             val launcherApps =
@@ -262,6 +252,8 @@ suspend fun getPrivateSpaceApps(
 }
 
 fun getUserHandleFromString(context: Context, userHandleString: String): UserHandle {
+    val current = android.os.Process.myUserHandle()
+    if (userHandleString.isBlank() || userHandleString == current.toString()) return current
     val userManager = context.getSystemService(Context.USER_SERVICE) as UserManager
     for (userHandle in userManager.userProfiles) {
         if (userHandle.toString() == userHandleString) {
@@ -336,129 +328,11 @@ fun openAppInfo(context: Context, userHandle: UserHandle, packageName: String) {
         context.showToast(context.getString(R.string.unable_to_open_app_info))
 }
 
-suspend fun getBitmapFromURL(src: String?): Bitmap? {
-    return withContext(Dispatchers.IO) {
-        var bitmap: Bitmap? = null
-        try {
-            val url = URL(src)
-            val connection: HttpURLConnection = url
-                .openConnection() as HttpURLConnection
-            connection.doInput = true
-            connection.connect()
-            val input: InputStream = connection.inputStream
-            bitmap = BitmapFactory.decodeStream(input)
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
-        bitmap
-    }
-}
-
-suspend fun getWallpaperBitmap(originalImage: Bitmap, width: Int, height: Int): Bitmap {
-    return withContext(Dispatchers.IO) {
-
-        val background = createBitmap(width, height)
-
-        val originalWidth: Float = originalImage.width.toFloat()
-        val originalHeight: Float = originalImage.height.toFloat()
-
-        val canvas = Canvas(background)
-        val heightScale: Float = height / originalHeight
-        val widthScale: Float = width / originalWidth
-        val scale = maxOf(heightScale, widthScale)
-
-        val (xTranslation, yTranslation) = if (heightScale > widthScale)
-            Pair((width - originalWidth * heightScale) / 2.0f, 0f)
-        else
-            Pair(0f, (height - originalHeight * widthScale) / 2.0f)
-
-        val transformation = Matrix()
-        transformation.postTranslate(xTranslation, yTranslation)
-        transformation.preScale(scale, scale)
-
-        val paint = Paint()
-        paint.isFilterBitmap = true
-        canvas.drawBitmap(originalImage, transformation, paint)
-
-        background
-    }
-}
-
-suspend fun setWallpaper(appContext: Context, url: String): Boolean {
-    return withContext(Dispatchers.IO) {
-        val originalImageBitmap = getBitmapFromURL(url) ?: return@withContext false
-        if (appContext.resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE && isTablet(appContext).not())
-            return@withContext false
-
-        val wallpaperManager = WallpaperManager.getInstance(appContext)
-        val (width, height) = getScreenDimensions(appContext)
-        val scaledBitmap = getWallpaperBitmap(originalImageBitmap, width, height)
-
-        try {
-            wallpaperManager.setBitmap(scaledBitmap, null, false, WallpaperManager.FLAG_SYSTEM)
-            wallpaperManager.setBitmap(scaledBitmap, null, false, WallpaperManager.FLAG_LOCK)
-        } catch (e: Exception) {
-            return@withContext false
-        }
-
-        try {
-            originalImageBitmap.recycle()
-            scaledBitmap.recycle()
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
-        true
-    }
-}
-
 fun getScreenDimensions(context: Context): Pair<Int, Int> {
     val windowManager = context.getSystemService(Context.WINDOW_SERVICE) as WindowManager
     val point = Point()
     windowManager.defaultDisplay.getRealSize(point)
     return Pair(point.x, point.y)
-}
-
-suspend fun getTodaysWallpaper(wallType: String, firstOpenTime: Long): String {
-    return withContext(Dispatchers.IO) {
-        var wallpaperUrl: String
-        try {
-            val key = if (firstOpenTime.isDaySince() < 10)
-                String.format("0_%s", firstOpenTime.isDaySince().toString())
-            else {
-                val month = SimpleDateFormat("M", Locale.ENGLISH).format(Date()) ?: "0"
-                val day = SimpleDateFormat("d", Locale.ENGLISH).format(Date()) ?: "0"
-                String.format("%s_%s", month, day)
-            }
-
-            val url = URL(Constants.URL_WALLPAPERS)
-            val connection: HttpURLConnection = url.openConnection() as HttpURLConnection
-            connection.doInput = true
-            connection.connect()
-
-            val inputStream = connection.inputStream
-            val scanner = Scanner(inputStream)
-            val stringBuffer = StringBuffer()
-            while (scanner.hasNext()) {
-                stringBuffer.append(scanner.nextLine())
-            }
-
-            val json = JSONObject(stringBuffer.toString())
-            val wallpapers = json.getString(key)
-            val wallpapersJson = JSONObject(wallpapers)
-            wallpaperUrl = wallpapersJson.getString(wallType)
-            wallpaperUrl
-
-        } catch (e: Exception) {
-            wallpaperUrl = getBackupWallpaper(wallType)
-            wallpaperUrl
-        }
-    }
-}
-
-fun getBackupWallpaper(wallType: String): String {
-    return if (wallType == Constants.WALL_TYPE_LIGHT)
-        Constants.URL_DEFAULT_LIGHT_WALLPAPER
-    else Constants.URL_DEFAULT_DARK_WALLPAPER
 }
 
 @SuppressLint("WrongConstant", "PrivateApi")
@@ -477,7 +351,7 @@ fun expandNotificationDrawer(context: Context) {
 fun openDialerApp(context: Context) {
     try {
         val sendIntent = Intent(Intent.ACTION_DIAL)
-        context.startActivity(sendIntent)
+        context.startFocusedActivity(sendIntent)
     } catch (e: Exception) {
         e.printStackTrace()
     }
@@ -486,7 +360,7 @@ fun openDialerApp(context: Context) {
 fun openCameraApp(context: Context) {
     try {
         val sendIntent = Intent(MediaStore.INTENT_ACTION_STILL_IMAGE_CAMERA)
-        context.startActivity(sendIntent)
+        context.startFocusedActivity(sendIntent)
     } catch (e: Exception) {
         e.printStackTrace()
     }
@@ -495,7 +369,7 @@ fun openCameraApp(context: Context) {
 fun openAlarmApp(context: Context) {
     try {
         val intent = Intent(AlarmClock.ACTION_SHOW_ALARMS)
-        context.startActivity(intent)
+        context.startFocusedActivity(intent)
     } catch (e: Exception) {
         Log.d("TAG", e.toString())
     }
@@ -507,12 +381,12 @@ fun openCalendar(context: Context) {
             .buildUpon()
             .appendPath("time")
             .build()
-        context.startActivity(Intent(Intent.ACTION_VIEW, calendarUri))
+        context.startFocusedActivity(Intent(Intent.ACTION_VIEW, calendarUri))
     } catch (e: Exception) {
         try {
             val intent = Intent(Intent.ACTION_MAIN)
             intent.addCategory(Intent.CATEGORY_APP_CALENDAR)
-            context.startActivity(intent)
+            context.startFocusedActivity(intent)
         } catch (e: Exception) {
             e.printStackTrace()
         }
@@ -658,4 +532,13 @@ fun Context.deletePinnedShortcut(packageName: String, shortcutIdToDelete: String
         // Handle other potential exceptions (like RemoteException wrapped)
         Log.e("ShortcutHelper", "Failed to modify pinned shortcuts for $packageName", e)
     }
+}
+
+fun Context.startFocusedActivity(intent: Intent) {
+    val session = FocusSession(this)
+    if (session.active) {
+        val pkg = intent.resolveActivity(packageManager)?.packageName ?: return
+        if (!session.checkLaunch(pkg)) return
+    }
+    startActivity(intent)
 }

@@ -1,6 +1,10 @@
 apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 
+def releaseSigning = new Properties()
+def signingFile = rootProject.file('keystore.properties')
+if (signingFile.exists()) signingFile.withInputStream { releaseSigning.load(it) }
+
 android {
     compileSdk 36
 
@@ -14,20 +18,34 @@ android {
     }
 
     defaultConfig {
-        applicationId "app.olauncher"
-        minSdkVersion 24
+        applicationId "app.olauncher.focus"
+        minSdkVersion 26
         targetSdkVersion 36
         versionCode 113
-        versionName "v6.9.17"
+        versionName "1.0.0"
+        resValue "string", "launcher_name", "Focus Launcher"
 
         resourceConfigurations += ["en", "ar", "cs", "da", "de", "el", "es-rES", "es-rUS", "fi", "fr", "he", "hi", "hr", "hu", "in", "it", "ja", "ko", "nb", "nl", "pl", "pt-rBR", "ro", "ru-rRU", "sv", "th", "tr", "uk", "vi", "zh"]
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    signingConfigs {
+        if (signingFile.exists()) {
+            release {
+                storeFile file(releaseSigning['storeFile'])
+                storePassword releaseSigning['storePassword']
+                keyAlias releaseSigning['keyAlias']
+                keyPassword releaseSigning['keyPassword']
+            }
+        }
+    }
+
     buildTypes {
         release {
+            if (signingFile.exists()) signingConfig signingConfigs.release
             debuggable false
             minifyEnabled true
+            shrinkResources true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
         debug {
@@ -38,6 +56,7 @@ android {
         }
     }
     buildFeatures {
+        aidl = true
         viewBinding = true
         buildConfig = true
     }
@@ -50,6 +69,8 @@ android {
 
 dependencies {
     implementation fileTree(dir: "libs", include: ["*.jar"])
+    implementation "dev.rikka.shizuku:api:13.1.5"
+    implementation "dev.rikka.shizuku:provider:13.1.5"
     implementation libs.kotlin.stdlib
     implementation libs.core.ktx
     implementation libs.appcompat
@@ -68,5 +89,9 @@ dependencies {
     //Material dependency
     implementation libs.material
 
+    androidTestImplementation 'androidx.test:runner:1.6.2'
+    androidTestImplementation 'androidx.test:rules:1.6.1'
+    androidTestImplementation 'androidx.test.ext:junit:1.2.1'
+    androidTestImplementation 'androidx.test.uiautomator:uiautomator:2.3.0'
     testImplementation libs.junit
 }

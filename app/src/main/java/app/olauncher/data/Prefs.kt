@@ -152,6 +152,22 @@ class Prefs(context: Context) {
         get() = prefs.getBoolean(KEYBOARD_MESSAGE, false)
         set(value) = prefs.edit { putBoolean(KEYBOARD_MESSAGE, value).apply() }
 
+    var wallpaperLatitude: Double?
+        get() = prefs.getString("WALLPAPER_LATITUDE", null)?.toDoubleOrNull()
+        set(value) = prefs.edit { putString("WALLPAPER_LATITUDE", value?.toString()) }
+
+    var wallpaperLongitude: Double?
+        get() = prefs.getString("WALLPAPER_LONGITUDE", null)?.toDoubleOrNull()
+        set(value) = prefs.edit { putString("WALLPAPER_LONGITUDE", value?.toString()) }
+
+    var wallpaperStyle: Int
+        get() = prefs.getInt("WALLPAPER_STYLE", 0)
+        set(value) = prefs.edit { putInt("WALLPAPER_STYLE", value) }
+
+    var wallpaperVariation: Int
+        get() = prefs.getInt("WALLPAPER_VARIATION", 0)
+        set(value) = prefs.edit { putInt("WALLPAPER_VARIATION", value) }
+
     var dailyWallpaper: Boolean
         get() = prefs.getBoolean(DAILY_WALLPAPER, false)
         set(value) = prefs.edit { putBoolean(DAILY_WALLPAPER, value).apply() }

@@ -21,6 +21,12 @@ import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.os.bundleOf
 import androidx.core.view.isVisible
 import androidx.core.view.setPadding
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import app.olauncher.helper.FocusSession
 import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProvider
 import androidx.navigation.fragment.findNavController
@@ -41,6 +47,7 @@ import app.olauncher.helper.openCalendar
 import app.olauncher.helper.openCameraApp
 import app.olauncher.helper.openDialerApp
 import app.olauncher.helper.setPlainWallpaperByTheme
+import app.olauncher.helper.startFocusedActivity
 import app.olauncher.helper.showToast
 import app.olauncher.listener.OnSwipeTouchListener
 import app.olauncher.listener.ViewSwipeTouchListener
@@ -50,6 +57,7 @@ import java.util.Locale
 
 class HomeFragment : BaseFragment(), View.OnClickListener, View.OnLongClickListener {
 
+    private lateinit var focus: FocusSession
     private lateinit var prefs: Prefs
     private lateinit var viewModel: MainViewModel
     private lateinit var deviceManager: DevicePolicyManager
@@ -65,6 +73,7 @@ class HomeFragment : BaseFragment(), View.OnClickListener, View.OnLongClickListe
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         prefs = Prefs(requireContext())
+        focus = FocusSession(requireContext())
         viewModel = activity?.run {
             ViewModelProvider(this)[MainViewModel::class.java]
         } ?: throw Exception("Invalid Activity")
@@ -75,6 +84,36 @@ class HomeFragment : BaseFragment(), View.OnClickListener, View.OnLongClickListe
         setHomeAlignment(prefs.homeAlignment)
         initSwipeTouchListener()
         initClickListeners()
+        binding.focusPanel.focusToggle.setOnClickListener {
+            val session = focus
+            if (session.active || !session.configured) showFocusSettings { updateFocus() }
+            else {
+                session.start(); updateFocus()
+                if (session.closeBlockedApps) viewLifecycleOwner.lifecycleScope.launch {
+                    val count = app.olauncher.helper.CloseBlockedApps(requireContext()).close()
+                    if (isAdded) requireContext().showToast(if (count < 0) getString(R.string.focus_close_failed)
+                        else getString(R.string.focus_closed, count))
+                }
+            }
+        }
+        binding.focusPanel.focusSettings.setOnClickListener { showFocusSettings { updateFocus() } }
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.RESUMED) {
+                while (true) { updateFocus(); delay(1000) }
+            }
+        }
+    }
+
+    private fun updateFocus() {
+        val session = focus
+        val remaining = session.remaining
+        val seconds = (remaining + 999) / 1000
+        binding.focusPanel.focusToggle.text = if (remaining > 0)
+            getString(R.string.focus_remaining, String.format(Locale.getDefault(), "%02d:%02d", seconds / 60, seconds % 60))
+        else getString(R.string.focus_start) + " · ${session.minutes} min"
+        binding.focusPanel.focusProgress.progress = if (remaining > 0)
+            (remaining * 1000 / session.duration).toInt() else 1000
+        binding.focusPanel.focusGuardStatus.setText(if (focusGuardEnabled()) R.string.focus_guard_on else R.string.focus_guard_off)
     }
 
     override fun onResume() {
@@ -320,109 +359,12 @@ class HomeFragment : BaseFragment(), View.OnClickListener, View.OnLongClickListe
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q)
             populateScreenTime()
 
-        val homeAppsNum = prefs.homeAppsNum
-        if (homeAppsNum == 0) return
-
-        binding.homeApp1.visibility = View.VISIBLE
-        if (!setHomeAppText(binding.homeApp1, prefs.appName1, prefs.appPackage1, prefs.appUser1, prefs.isShortcut1, prefs.shortcutId1)) {
-            prefs.appName1 = ""
-            prefs.appPackage1 = ""
+        val views = listOf(binding.homeApp1, binding.homeApp2, binding.homeApp3, binding.homeApp4,
+            binding.homeApp5, binding.homeApp6, binding.homeApp7, binding.homeApp8)
+        views.forEachIndexed { index, textView ->
+            textView.isVisible = index < prefs.homeAppsNum
+            textView.text = prefs.getAppName(index + 1)
         }
-        if (homeAppsNum == 1) return
-
-        binding.homeApp2.visibility = View.VISIBLE
-        if (!setHomeAppText(binding.homeApp2, prefs.appName2, prefs.appPackage2, prefs.appUser2, prefs.isShortcut2, prefs.shortcutId2)) {
-            prefs.appName2 = ""
-            prefs.appPackage2 = ""
-        }
-        if (homeAppsNum == 2) return
-
-        binding.homeApp3.visibility = View.VISIBLE
-        if (!setHomeAppText(binding.homeApp3, prefs.appName3, prefs.appPackage3, prefs.appUser3, prefs.isShortcut3, prefs.shortcutId3)) {
-            prefs.appName3 = ""
-            prefs.appPackage3 = ""
-        }
-        if (homeAppsNum == 3) return
-
-        binding.homeApp4.visibility = View.VISIBLE
-        if (!setHomeAppText(binding.homeApp4, prefs.appName4, prefs.appPackage4, prefs.appUser4, prefs.isShortcut4, prefs.shortcutId4)) {
-            prefs.appName4 = ""
-            prefs.appPackage4 = ""
-        }
-        if (homeAppsNum == 4) return
-
-        binding.homeApp5.visibility = View.VISIBLE
-        if (!setHomeAppText(binding.homeApp5, prefs.appName5, prefs.appPackage5, prefs.appUser5, prefs.isShortcut5, prefs.shortcutId5)) {
-            prefs.appName5 = ""
-            prefs.appPackage5 = ""
-        }
-        if (homeAppsNum == 5) return
-
-        binding.homeApp6.visibility = View.VISIBLE
-        if (!setHomeAppText(binding.homeApp6, prefs.appName6, prefs.appPackage6, prefs.appUser6, prefs.isShortcut6, prefs.shortcutId6)) {
-            prefs.appName6 = ""
-            prefs.appPackage6 = ""
-        }
-        if (homeAppsNum == 6) return
-
-        binding.homeApp7.visibility = View.VISIBLE
-        if (!setHomeAppText(binding.homeApp7, prefs.appName7, prefs.appPackage7, prefs.appUser7, prefs.isShortcut7, prefs.shortcutId7)) {
-            prefs.appName7 = ""
-            prefs.appPackage7 = ""
-        }
-        if (homeAppsNum == 7) return
-
-        binding.homeApp8.visibility = View.VISIBLE
-        if (!setHomeAppText(binding.homeApp8, prefs.appName8, prefs.appPackage8, prefs.appUser8, prefs.isShortcut8, prefs.shortcutId8)) {
-            prefs.appName8 = ""
-            prefs.appPackage8 = ""
-        }
-    }
-
-    private fun setHomeAppText(
-        textView: TextView,
-        appName: String,
-        packageName: String,
-        userString: String,
-        isShortcut: Boolean,
-        shortcutId: String?,
-    ): Boolean {
-        // Get user handle for the app/shortcut
-        val userHandle = getUserHandleFromString(requireContext(), userString)
-
-        // If it's a shortcut, verify it still exists
-        if (isShortcut) {
-            val launcherApps = requireContext().getSystemService(Context.LAUNCHER_APPS_SERVICE) as LauncherApps
-
-            // Query for the specific shortcut
-            val query = LauncherApps.ShortcutQuery().apply {
-                setPackage(packageName)
-                setQueryFlags(LauncherApps.ShortcutQuery.FLAG_MATCH_PINNED)
-            }
-
-            try {
-                val shortcuts = launcherApps.getShortcuts(query, userHandle)
-                // Check if our shortcut still exists
-                if (shortcuts?.any { it.id == shortcutId } == true) {
-                    textView.text = appName
-                    return true
-                }
-                textView.text = ""
-                return false
-            } catch (e: Exception) {
-                e.printStackTrace()
-                textView.text = ""
-                return false
-            }
-        }
-
-        // Regular app check
-        if (isPackageInstalled(requireContext(), packageName, userString)) {
-            textView.text = appName
-            return true
-        }
-        textView.text = ""
-        return false
     }
 
     private fun hideHomeApps() {
@@ -595,7 +537,6 @@ class HomeFragment : BaseFragment(), View.OnClickListener, View.OnLongClickListe
         val changedAppTheme = getChangedAppTheme(requireContext(), prefs.appTheme)
         prefs.appTheme = changedAppTheme
         if (prefs.dailyWallpaper) {
-            setPlainWallpaperByTheme(requireContext(), changedAppTheme)
             viewModel.setWallpaperWorker()
         }
         requireActivity().recreate()
@@ -617,7 +558,7 @@ class HomeFragment : BaseFragment(), View.OnClickListener, View.OnLongClickListe
                 Constants.DIGITAL_WELLBEING_PACKAGE_NAME,
                 Constants.DIGITAL_WELLBEING_ACTIVITY
             )
-            startActivity(intent)
+            requireContext().startFocusedActivity(intent)
         } catch (e: Exception) {
             e.printStackTrace()
             try {
@@ -625,7 +566,7 @@ class HomeFragment : BaseFragment(), View.OnClickListener, View.OnLongClickListe
                     Constants.DIGITAL_WELLBEING_SAMSUNG_PACKAGE_NAME,
                     Constants.DIGITAL_WELLBEING_SAMSUNG_ACTIVITY
                 )
-                startActivity(intent)
+                requireContext().startFocusedActivity(intent)
             } catch (e: Exception) {
                 e.printStackTrace()
             }

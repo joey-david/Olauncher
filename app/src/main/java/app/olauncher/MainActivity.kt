@@ -135,32 +135,35 @@ class MainActivity : AppCompatActivity() {
         isResumed = true
         viewModel.isPrivateSpaceToggling = false
         viewModel.getAppList()
+        viewModel.getPrivateSpaceAppList()
+        if (prefs.dailyWallpaper && prefs.dailyWallpaperUrl != app.olauncher.helper.GeneratedWallpaper(this).key(System.currentTimeMillis()))
+            viewModel.setWallpaperWorker()
     }
 
     private fun registerShortcutCallback() {
         val launcherApps = getSystemService(LauncherApps::class.java)
         launcherAppsCallback = object : LauncherApps.Callback() {
-            override fun onPackageRemoved(packageName: String, user: android.os.UserHandle) = Unit
-            override fun onPackageAdded(packageName: String, user: android.os.UserHandle) = Unit
-            override fun onPackageChanged(packageName: String, user: android.os.UserHandle) = Unit
+            override fun onPackageRemoved(packageName: String, user: android.os.UserHandle) { viewModel.getAppList(force = true) }
+            override fun onPackageAdded(packageName: String, user: android.os.UserHandle) { viewModel.getAppList(force = true) }
+            override fun onPackageChanged(packageName: String, user: android.os.UserHandle) { viewModel.getAppList(force = true) }
             override fun onPackagesAvailable(
                 packageNames: Array<out String>,
                 user: android.os.UserHandle,
                 replacing: Boolean,
-            ) = Unit
+            ) { viewModel.getAppList(force = true) }
 
             override fun onPackagesUnavailable(
                 packageNames: Array<out String>,
                 user: android.os.UserHandle,
                 replacing: Boolean,
-            ) = Unit
+            ) { viewModel.getAppList(force = true) }
 
             override fun onShortcutsChanged(
                 packageName: String,
                 shortcuts: MutableList<ShortcutInfo>,
                 user: android.os.UserHandle,
             ) {
-                viewModel.getAppList()
+                viewModel.getAppList(force = true)
             }
         }
         launcherApps.registerCallback(launcherAppsCallback!!)
@@ -190,7 +193,6 @@ class MainActivity : AppCompatActivity() {
         super.onConfigurationChanged(newConfig)
         AppCompatDelegate.setDefaultNightMode(prefs.appTheme)
         if (prefs.dailyWallpaper && AppCompatDelegate.getDefaultNightMode() == AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM) {
-            setPlainWallpaper()
             viewModel.setWallpaperWorker()
             recreate()
         }
@@ -364,9 +366,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun restartLauncherOrCheckTheme(forceRestart: Boolean = false) {
-        if (forceRestart || prefs.launcherRestartTimestamp.hasBeenHours(4)) {
-            prefs.launcherRestartTimestamp = System.currentTimeMillis()
-            cacheDir.deleteRecursively()
+        if (forceRestart) {
             recreate()
         } else
             checkTheme()

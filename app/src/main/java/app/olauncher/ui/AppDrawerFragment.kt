@@ -188,7 +188,7 @@ class AppDrawerFragment : BaseFragment() {
                         }
                     }
                 }
-                viewModel.getAppList()
+                viewModel.getAppList(force = true)
             },
             appHideListener = { appModel, position ->
                 if (appModel is AppModel.PinnedShortcut) {
@@ -215,7 +215,7 @@ class AppDrawerFragment : BaseFragment() {
                     viewModel.showDialog.postValue(Constants.Dialog.HIDDEN)
                     findNavController().navigate(R.id.action_appListFragment_to_settingsFragment2)
                 }
-                viewModel.getAppList()
+                viewModel.getAppList(force = true)
                 viewModel.getHiddenApps()
             },
             appRenameListener = { appModel, renameLabel ->
@@ -225,7 +225,7 @@ class AppDrawerFragment : BaseFragment() {
                     else -> return@AppDrawerAdapter
                 }
                 prefs.setAppRenameLabel(identifier, renameLabel)
-                viewModel.getAppList()
+                viewModel.getAppList(force = true)
             },
             privateSpaceToggleListener = {
                 viewModel.togglePrivateSpaceLock()

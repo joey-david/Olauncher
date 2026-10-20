@@ -3,6 +3,8 @@ package app.olauncher.ui
 import android.app.admin.DevicePolicyManager
 import android.content.ComponentName
 import android.content.Context
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.launch
 import android.content.Intent
 import android.os.Build
 import android.os.Bundle
@@ -46,6 +48,46 @@ import app.olauncher.helper.showToast
 import app.olauncher.listener.DeviceAdmin
 
 class SettingsFragment : BaseFragment(), View.OnClickListener, View.OnLongClickListener {
+
+    private val locationPermission = registerForActivityResult(androidx.activity.result.contract.ActivityResultContracts.RequestPermission()) { granted ->
+        if (granted) readWallpaperLocation()
+        else requireContext().showToast(R.string.wallpaper_location_missing)
+    }
+    private var locationCancellation: android.os.CancellationSignal? = null
+
+    private fun requestWallpaperLocation() {
+        locationPermission.launch(android.Manifest.permission.ACCESS_COARSE_LOCATION)
+    }
+
+    private fun readWallpaperLocation() {
+        val manager = requireContext().getSystemService(Context.LOCATION_SERVICE) as android.location.LocationManager
+        fun save(location: android.location.Location?) {
+            if (!isAdded) return
+            if (location == null) { requireContext().showToast(R.string.wallpaper_location_missing); return }
+            prefs.wallpaperLatitude = location.latitude
+            prefs.wallpaperLongitude = location.longitude
+            viewModel.setWallpaperWorker()
+            if (_binding != null) populateWallpaperText()
+        }
+        try {
+            if (android.os.Build.VERSION.SDK_INT >= 30 && manager.isProviderEnabled(android.location.LocationManager.NETWORK_PROVIDER)) {
+                locationCancellation?.cancel()
+                val signal = android.os.CancellationSignal()
+                locationCancellation = signal
+                manager.getCurrentLocation(android.location.LocationManager.NETWORK_PROVIDER, signal, requireContext().mainExecutor) { save(it) }
+                viewLifecycleOwner.lifecycleScope.launch {
+                    kotlinx.coroutines.delay(15_000)
+                    if (!signal.isCanceled) signal.cancel()
+                }
+            } else {
+                val location = manager.getProviders(true).mapNotNull {
+                    try { manager.getLastKnownLocation(it) } catch (_: SecurityException) { null }
+                }.filter { System.currentTimeMillis() - it.time < 86_400_000 }.maxByOrNull { it.time }
+                save(location)
+            }
+        } catch (_: SecurityException) { save(null) }
+        catch (_: Exception) { save(null) }
+    }
 
     private lateinit var prefs: Prefs
     private lateinit var viewModel: MainViewModel
@@ -109,8 +151,8 @@ class SettingsFragment : BaseFragment(), View.OnClickListener, View.OnLongClickL
             // R.id.homeButtonRecents -> toggleHomeButtonRecents()
             R.id.autoShowKeyboard -> toggleKeyboardText()
             R.id.homeAppsNum -> showHomeAppsNumMenu(view)
-            R.id.dailyWallpaperUrl -> requireContext().openUrl(prefs.dailyWallpaperUrl)
-            R.id.dailyWallpaper -> toggleDailyWallpaperUpdate()
+            R.id.dailyWallpaperUrl -> showWallpaperSettings({ requestWallpaperLocation() }) { if (_binding != null) populateWallpaperText() }
+            R.id.dailyWallpaper -> showWallpaperSettings({ requestWallpaperLocation() }) { if (_binding != null) populateWallpaperText() }
             R.id.alignment -> showAlignmentMenu(view)
             R.id.statusBar -> toggleStatusBar()
             R.id.dateTime -> showDateTimeMenu(view)
@@ -432,26 +474,6 @@ class SettingsFragment : BaseFragment(), View.OnClickListener, View.OnLongClickL
         viewModel.cancelWallpaperWorker()
     }
 
-    private fun toggleDailyWallpaperUpdate() {
-        if (prefs.dailyWallpaper.not() && prefs.appTheme == AppCompatDelegate.MODE_NIGHT_YES && viewModel.isOlauncherDefault.value == false) {
-            requireContext().showToast(R.string.set_as_default_launcher_first)
-            return
-        }
-        prefs.dailyWallpaper = !prefs.dailyWallpaper
-        populateWallpaperText()
-        if (prefs.dailyWallpaper) {
-            viewModel.setWallpaperWorker()
-            showWallpaperToasts()
-        } else viewModel.cancelWallpaperWorker()
-    }
-
-    private fun showWallpaperToasts() {
-        if (isOlauncherDefault(requireContext()))
-            requireContext().showToast(getString(R.string.your_wallpaper_will_update_shortly))
-        else
-            requireContext().showToast(getString(R.string.olauncher_is_not_default_launcher), Toast.LENGTH_LONG)
-    }
-
     private fun updateHomeAppsNum(num: Int) {
         binding.homeAppsNum.text = num.toString()
         prefs.homeAppsNum = num
@@ -509,23 +531,11 @@ class SettingsFragment : BaseFragment(), View.OnClickListener, View.OnLongClickL
     private fun setAppTheme(theme: Int) {
         if (AppCompatDelegate.getDefaultNightMode() == theme) return
         if (prefs.dailyWallpaper) {
-            setPlainWallpaper(theme)
             viewModel.setWallpaperWorker()
         }
         requireActivity().recreate()
     }
 
-    private fun setPlainWallpaper(appTheme: Int) {
-        when (appTheme) {
-            AppCompatDelegate.MODE_NIGHT_YES -> setPlainWallpaper(requireContext(), android.R.color.black)
-            AppCompatDelegate.MODE_NIGHT_NO -> setPlainWallpaper(requireContext(), android.R.color.white)
-            else -> {
-                if (requireContext().isDarkThemeOn())
-                    setPlainWallpaper(requireContext(), android.R.color.black)
-                else setPlainWallpaper(requireContext(), android.R.color.white)
-            }
-        }
-    }
 
     private fun populateAppThemeText(appTheme: Int = prefs.appTheme) {
         when (appTheme) {
@@ -562,8 +572,9 @@ class SettingsFragment : BaseFragment(), View.OnClickListener, View.OnLongClickL
     }
 
     private fun populateWallpaperText() {
-        if (prefs.dailyWallpaper) binding.dailyWallpaper.text = getString(R.string.on)
-        else binding.dailyWallpaper.text = getString(R.string.off)
+        binding.dailyWallpaper.text = getString(R.string.wallpaper_studio) + " · " + getString(if (prefs.dailyWallpaper) R.string.on else R.string.off)
+        binding.dailyWallpaperUrl.text = getString(R.string.wallpaper_studio)
+        binding.dailyWallpaperUrl.visibility = View.VISIBLE
     }
 
     private fun updateHomeBottomAlignment() {
@@ -662,6 +673,7 @@ class SettingsFragment : BaseFragment(), View.OnClickListener, View.OnLongClickL
     }
 
     override fun onDestroyView() {
+        locationCancellation?.cancel()
         // Dismissing the text size dialog applies any pending scale via its dismiss listener
         dialog?.dismiss()
         dialog = null

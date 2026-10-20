@@ -95,7 +95,7 @@
         \n\nIt\'s also the best way to support the developers of Olauncher. Check it out!</string>
     <string name="wallpaper_message">Olauncher offers beautiful new wallpapers daily. Give your homescreen a fresh new look every day, for free!
         \n\nWant to try it?</string>
-    <string name="accessibility_service_description">The accessibility permission is required to enable the gesture - double tap to lock . Any data acquired by Olauncher via this service will not leave your device.</string>
+    <string name="accessibility_service_description">Locks the screen on double tap. During a focus timer, checks foreground app names and returns to home when a blocked app opens. Phone calls, the keyboard and system settings remain available.</string>
     <string name="support_olauncher_for_free">Support Olauncher for free by using our Amazon affiliate link.</string>
     <string name="support_olauncher_message">Every time you buy something using our link, we get a small commission. Please save the link and use it whenever you shop online.\nThank you!</string>
     <string name="open">Open link</string>
@@ -173,4 +173,44 @@
     <string name="invalid_shortcut">Invalid shortcut</string>
     <string name="shortcut_not_found">Shortcut not found</string>
     <string name="unable_to_open_shortcut">Unable to open shortcut</string>
+    <string translatable="false" name="focus_start">Start focus</string>
+    <string translatable="false" name="focus_options">Focus settings</string>
+    <string translatable="false" name="focus_apps">Allowed apps</string>
+    <string translatable="false" name="focus_duration">Minutes (1–240)</string>
+    <string translatable="false" name="focus_remaining">%1$s remaining</string>
+    <string translatable="false" name="focus_stop">End focus?</string>
+    <string translatable="false" name="focus_stop_detail">All apps will become available again.</string>
+    <string translatable="false" name="focus_app_blocked">This app is paused until your focus timer ends.</string>
+    <string translatable="false" name="focus_guard">Block apps opened from notifications and Recents</string>
+    <string translatable="false" name="focus_guard_detail">Enable Focus Launcher in Accessibility settings. The service checks the foreground app name and returns you home when a blocked app opens. Phone calls, the keyboard and system settings stay available. It does not close app processes. You can turn it off at any time.</string>
+    <string translatable="false" name="focus_guard_on">App guard enabled</string>
+    <string translatable="false" name="focus_guard_off">App guard off · launcher only</string>
+    <string translatable="false" name="focus_save">Save</string>
+    <string translatable="false" name="wallpaper_studio">Wallpapers</string>
+    <string translatable="false" name="wallpaper_dunes">Dunes</string>
+    <string translatable="false" name="wallpaper_ridges">Ridges</string>
+    <string translatable="false" name="wallpaper_orbits">Orbits</string>
+    <string translatable="false" name="wallpaper_day_preview">Preview day</string>
+    <string translatable="false" name="wallpaper_night_preview">Preview night</string>
+    <string translatable="false" name="wallpaper_variant">New variation</string>
+    <string translatable="false" name="wallpaper_apply">Use daily wallpapers</string>
+    <string translatable="false" name="wallpaper_photo">Choose a photo / system wallpaper</string>
+    <string translatable="false" name="wallpaper_location">Sunrise / sunset location</string>
+    <string translatable="false" name="wallpaper_approximate">Use approximate location once</string>
+    <string translatable="false" name="wallpaper_coordinates">Enter coordinates</string>
+    <string translatable="false" name="wallpaper_location_help">Coordinates stay on your phone. Without a location, day runs from 07:00 to 19:00. Changes may run late while Android saves battery; returning home refreshes the image. This changes the home wallpaper only.</string>
+    <string translatable="false" name="wallpaper_latitude">Latitude (−90 to 90)</string>
+    <string translatable="false" name="wallpaper_longitude">Longitude (−180 to 180)</string>
+    <string translatable="false" name="wallpaper_location_missing">No recent location. Enable location or enter coordinates.</string>
+    <string translatable="false" name="wallpaper_fallback">Schedule: 07:00–19:00 · location unset</string>
+    <string translatable="false" name="wallpaper_solar">Sunrise %1$s · sunset %2$s</string>
+    <string translatable="false" name="wallpaper_polar">Polar day / night</string>
+    <string translatable="false" name="wallpaper_earth">Earth · daily satellite view</string>
+    <string translatable="false" name="wallpaper_earth_detail">Earth mode downloads a small NASA Blue Marble mosaic crop, then keeps it for day and night. A new date picks a new location. This is historical satellite imagery. Offline, you get a generated landscape until the download succeeds. Imagery: NASA / GSFC / Reto Stöckli.</string>
+    <string translatable="false" name="focus_service_description">Locks the screen on double tap. During a focus timer, checks foreground app names and returns home when a blocked app opens. Phone calls, the keyboard and Settings remain available.</string>
+    <string translatable="false" name="focus_close_apps">Close blocked apps when focus starts · Shizuku</string>
+    <string translatable="false" name="focus_close_apps_detail">Android needs Shizuku access to force-stop other apps. Set up and start Shizuku, then authorize Focus Launcher. This closes blocked launchable apps in your profile; it can interrupt downloads and delay their notifications until you open them again. Phone, SMS, clock/alarms, the keyboard, Settings and allowed apps stay available. This option is off by default.</string>
+    <string translatable="false" name="focus_shizuku_authorize">Set up / authorize Shizuku</string>
+    <string translatable="false" name="focus_close_failed">Could not close apps. Start Shizuku and grant access in focus settings.</string>
+    <string translatable="false" name="focus_closed">Closed %1$d blocked apps</string>
 </resources>
