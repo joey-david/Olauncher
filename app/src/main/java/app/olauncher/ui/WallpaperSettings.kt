@@ -70,9 +70,9 @@ fun Fragment.showWallpaperSettings(requestLocation: () -> Unit, onChanged: () ->
     panel.addView(switches)
     panel.addView(button(R.string.wallpaper_variant) { variation++; refresh() })
     val solar = wallpaper.solarTimes(System.currentTimeMillis())
-    val schedule = if (prefs.wallpaperLatitude == null) getString(R.string.wallpaper_fallback)
-        else if (solar.sunrise == null || solar.sunset == null) getString(R.string.wallpaper_polar)
-        else getString(R.string.wallpaper_solar, DateFormat.getTimeFormat(context).format(Date(solar.sunrise)), DateFormat.getTimeFormat(context).format(Date(solar.sunset)))
+    val schedule = if (solar.sunrise == null || solar.sunset == null) getString(R.string.wallpaper_polar)
+        else getString(R.string.wallpaper_solar, DateFormat.getTimeFormat(context).format(Date(solar.sunrise)), DateFormat.getTimeFormat(context).format(Date(solar.sunset))) +
+            if (prefs.wallpaperLatitude == null) "\n" + getString(R.string.wallpaper_fallback) else ""
     panel.addView(TextView(context).apply { text = schedule })
     panel.addView(button(R.string.wallpaper_location) {
         AlertDialog.Builder(context).setTitle(R.string.wallpaper_location)

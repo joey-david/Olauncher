@@ -198,11 +198,11 @@
     <string translatable="false" name="wallpaper_location">Sunrise / sunset location</string>
     <string translatable="false" name="wallpaper_approximate">Use approximate location once</string>
     <string translatable="false" name="wallpaper_coordinates">Enter coordinates</string>
-    <string translatable="false" name="wallpaper_location_help">Coordinates stay on your phone. Without a location, day runs from 07:00 to 19:00. Changes may run late while Android saves battery; returning home refreshes the image. This changes the home wallpaper only.</string>
+    <string translatable="false" name="wallpaper_location_help">Coordinates stay on your phone. Without a location, times are estimated for Paris latitude and your time zone. Changes may run late while Android saves battery; returning home refreshes the image. This changes the home wallpaper only.</string>
     <string translatable="false" name="wallpaper_latitude">Latitude (−90 to 90)</string>
     <string translatable="false" name="wallpaper_longitude">Longitude (−180 to 180)</string>
     <string translatable="false" name="wallpaper_location_missing">No recent location. Enable location or enter coordinates.</string>
-    <string translatable="false" name="wallpaper_fallback">Schedule: 07:00–19:00 · location unset</string>
+    <string translatable="false" name="wallpaper_fallback">Estimated for Paris latitude and your time zone</string>
     <string translatable="false" name="wallpaper_solar">Sunrise %1$s · sunset %2$s</string>
     <string translatable="false" name="wallpaper_polar">Polar day / night</string>
     <string translatable="false" name="wallpaper_earth">Earth · daily satellite view</string>
@@ -213,4 +213,6 @@
     <string translatable="false" name="focus_shizuku_authorize">Set up / authorize Shizuku</string>
     <string translatable="false" name="focus_close_failed">Could not close apps. Start Shizuku and grant access in focus settings.</string>
     <string translatable="false" name="focus_closed">Closed %1$d blocked apps</string>
+    <string translatable="false" name="second_clock">Second clock</string>
+    <string translatable="false" name="second_clock_search">Search city</string>
 </resources>

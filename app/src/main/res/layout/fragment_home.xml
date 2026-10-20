@@ -54,6 +54,16 @@
             android:paddingHorizontal="3dp"
             android:textSize="@dimen/date_size"
             tools:text="Thu, 30 Dec" />
+
+        <TextClock
+            android:id="@+id/clock2"
+            style="@style/TextDefault"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:paddingHorizontal="3dp"
+            android:textSize="@dimen/date_size"
+            android:visibility="gone"
+            tools:text="Tokyo 09:34" />
     </LinearLayout>
 
     <!-- Screen time-->

@@ -7,6 +7,7 @@ import androidx.core.graphics.createBitmap
 import app.olauncher.data.Prefs
 import java.text.SimpleDateFormat
 import java.util.Calendar
+import java.util.TimeZone
 import java.util.Date
 import java.util.Locale
 import kotlin.math.sin
@@ -20,14 +21,10 @@ class GeneratedWallpaper(private val context: Context) {
         val lat = prefs.wallpaperLatitude
         val lon = prefs.wallpaperLongitude
         if (lat != null && lon != null) return SolarTimes.at(now, lat, lon)
-        val calendar = Calendar.getInstance().apply {
-            timeInMillis = now
-            set(Calendar.HOUR_OF_DAY, 7); set(Calendar.MINUTE, 0); set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0)
-        }
-        val rise = calendar.timeInMillis
-        calendar.set(Calendar.HOUR_OF_DAY, 19)
-        val set = calendar.timeInMillis
-        return SolarTimes(rise, set, now in rise until set)
+        // No location set: Paris latitude, longitude estimated from the time zone's standard meridian.
+        val zone = TimeZone.getDefault()
+        val estimatedLon = if (zone.id == "Europe/Paris") 2.35 else (zone.rawOffset / 3_600_000.0 * 15).coerceIn(-180.0, 180.0)
+        return SolarTimes.at(now, 48.8566, estimatedLon)
     }
 
     fun nextChange(now: Long): Long {

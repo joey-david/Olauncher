@@ -132,4 +132,13 @@ class LauncherBehaviorTest {
         assertEquals(366, places.toSet().size)
         assertTrue(places.zipWithNext().all { (a, b) -> a.name != b.name })
     }
+
+    @Test fun secondClockShowsChosenCity() {
+        Prefs(context).secondClockZone = "Asia/Tokyo"
+        try {
+            home()
+            val clock = device.wait(Until.findObject(By.res(context.packageName, "clock2")), 5000)
+            assertTrue(clock.text, clock.text.startsWith("Tokyo "))
+        } finally { Prefs(context).secondClockZone = "" }
+    }
 }

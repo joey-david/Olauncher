@@ -130,6 +130,7 @@ class SettingsFragment : BaseFragment(), View.OnClickListener, View.OnLongClickL
         populateAlignment()
         populateStatusBar()
         populateDateTime()
+        populateSecondClock()
         populateSwipeApps()
         populateActionHints()
         initClickListeners()
@@ -156,6 +157,11 @@ class SettingsFragment : BaseFragment(), View.OnClickListener, View.OnLongClickL
             R.id.alignment -> showAlignmentMenu(view)
             R.id.statusBar -> toggleStatusBar()
             R.id.dateTime -> showDateTimeMenu(view)
+            R.id.secondClock -> showSecondClockPicker {
+                prefs.secondClockZone = it
+                populateSecondClock()
+                viewModel.toggleDateTime()
+            }
             R.id.appThemeText -> showAppThemeMenu(view, showSystem = false)
             R.id.textSizeValue -> showTextSizeDialog()
             R.id.boldFont -> toggleBoldFont()
@@ -219,6 +225,7 @@ class SettingsFragment : BaseFragment(), View.OnClickListener, View.OnLongClickL
         binding.alignment.setOnClickListener(this)
         binding.statusBar.setOnClickListener(this)
         binding.dateTime.setOnClickListener(this)
+        binding.secondClock.setOnClickListener(this)
         binding.swipeLeftApp.setOnClickListener(this)
         binding.swipeRightApp.setOnClickListener(this)
         binding.appThemeText.setOnClickListener(this)
@@ -389,6 +396,10 @@ class SettingsFragment : BaseFragment(), View.OnClickListener, View.OnLongClickL
         prefs.dateTimeVisibility = selected
         populateDateTime()
         viewModel.toggleDateTime()
+    }
+
+    private fun populateSecondClock() {
+        binding.secondClock.text = prefs.secondClockZone.ifEmpty { null }?.let(::zoneCity) ?: getString(R.string.off)
     }
 
     private fun populateDateTime() {
