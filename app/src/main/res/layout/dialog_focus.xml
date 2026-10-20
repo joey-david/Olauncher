@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Focus settings, inside dialog_base: the length on an exponential slider, then the options. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginTop="12dp"
+    android:orientation="vertical"
+    android:paddingEnd="8dp"
+    tools:ignore="RtlSymmetry">
+
+    <TextView
+        android:id="@+id/focusLength"
+        style="@style/TextDefault"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:fontFamily="sans-serif-thin"
+        android:fontFeatureSettings="tnum"
+        android:gravity="center"
+        android:includeFontPadding="false"
+        android:textColor="?attr/primaryColor"
+        android:textSize="44sp"
+        tools:text="25 min" />
+
+    <SeekBar
+        android:id="@+id/focusSlider"
+        android:layout_width="match_parent"
+        android:layout_height="40dp"
+        android:layout_marginTop="8dp"
+        android:contentDescription="@string/focus_duration"
+        android:max="1000"
+        android:paddingHorizontal="9dp"
+        android:progressDrawable="@drawable/focus_seekbar"
+        android:splitTrack="false"
+        android:thumb="@drawable/focus_thumb" />
+
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:alpha="0.5"
+        android:paddingHorizontal="12dp">
+
+        <TextView
+            style="@style/TextSmall"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/focus_min_label"
+            android:textColor="?attr/primaryColor"
+            android:textSize="11sp" />
+
+        <TextView
+            style="@style/TextSmall"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="end"
+            android:text="@string/focus_max_label"
+            android:textColor="?attr/primaryColor"
+            android:textSize="11sp" />
+    </FrameLayout>
+
+    <include android:id="@+id/focusApps" layout="@layout/focus_row" />
+    <include android:id="@+id/focusGuard" layout="@layout/focus_row" />
+
+    <LinearLayout
+        android:id="@+id/focusCloseRow"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="?attr/selectableItemBackground"
+        android:focusable="true"
+        android:gravity="center_vertical"
+        android:minHeight="56dp">
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <TextView
+                style="@style/TextSmall"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/focus_close_apps"
+                android:textColor="?attr/primaryColor"
+                android:textSize="16sp" />
+
+            <TextView
+                style="@style/TextSmall"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:alpha="0.6"
+                android:text="@string/focus_close_apps_hint"
+                android:textColor="?attr/primaryColor"
+                android:textSize="12sp" />
+        </LinearLayout>
+
+        <androidx.appcompat.widget.SwitchCompat
+            android:id="@+id/focusClose"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:clickable="false"
+            android:focusable="false" />
+    </LinearLayout>
+</LinearLayout>

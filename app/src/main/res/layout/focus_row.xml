@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- A tappable settings row in the focus dialog: a label and its current value. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginTop="4dp"
+    android:background="?attr/selectableItemBackground"
+    android:focusable="true"
+    android:gravity="center_vertical"
+    android:minHeight="56dp">
+
+    <TextView
+        android:id="@+id/rowLabel"
+        style="@style/TextSmall"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:textColor="?attr/primaryColor"
+        android:textSize="16sp"
+        tools:text="Allowed apps" />
+
+    <TextView
+        android:id="@+id/rowValue"
+        style="@style/TextSmall"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:alpha="0.6"
+        android:textColor="?attr/primaryColor"
+        android:textSize="14sp"
+        tools:text="3 apps" />
+</LinearLayout>

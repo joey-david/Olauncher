@@ -20,6 +20,7 @@ import androidx.recyclerview.widget.RecyclerView
 import androidx.recyclerview.widget.RecyclerView.Recycler
 import app.olauncher.MainViewModel
 import app.olauncher.R
+import app.olauncher.helper.FocusSession
 import app.olauncher.data.AppModel
 import app.olauncher.data.Constants
 import app.olauncher.data.Prefs
@@ -365,6 +366,12 @@ class AppDrawerFragment : BaseFragment() {
 
     override fun onStart() {
         super.onStart()
+        val focus = FocusSession(requireContext())
+        if (focus.active) {
+            val essentials = focus.essentialApps()
+            adapter.isLocked = { focus.locks(it, essentials) }
+        } else adapter.isLocked = { false }
+        adapter.notifyDataSetChanged()
         cachedIsCjkKeyboard = null
         binding.search.showKeyboard(prefs.autoShowKeyboard)
     }

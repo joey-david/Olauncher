@@ -174,17 +174,23 @@
     <string name="shortcut_not_found">Shortcut not found</string>
     <string name="unable_to_open_shortcut">Unable to open shortcut</string>
     <string translatable="false" name="focus_start">Start focus</string>
-    <string translatable="false" name="focus_options">Focus settings</string>
-    <string translatable="false" name="focus_apps">Allowed apps</string>
-    <string translatable="false" name="focus_duration">Minutes (1–240)</string>
-    <string translatable="false" name="focus_remaining">%1$s remaining</string>
-    <string translatable="false" name="focus_stop">End focus?</string>
-    <string translatable="false" name="focus_stop_detail">All apps will become available again.</string>
-    <string translatable="false" name="focus_app_blocked">This app is paused until your focus timer ends.</string>
+    <string translatable="false" name="focus_apps">Locked apps</string>
+    <string translatable="false" name="focus_duration">Focus length</string>
+    <string translatable="false" name="focus_min_label">1 min</string>
+    <string translatable="false" name="focus_max_label">24 h</string>
+    <string translatable="false" name="focus_focusing">Focusing</string>
+    <string translatable="false" name="focus_guard_short">App guard</string>
+    <string translatable="false" name="focus_on">On</string>
+    <string translatable="false" name="focus_off">Off</string>
+    <string translatable="false" name="focus_apps_none">None</string>
+    <string translatable="false" name="focus_close_apps_hint">Needs Shizuku</string>
+    <string translatable="false" name="focus_go">Start</string>
+    <string translatable="false" name="focus_locked_until">Locked until %1$s</string>
+    <string translatable="false" name="focus_app_blocked">Locked until your focus ends.</string>
     <string translatable="false" name="focus_guard">Block apps opened from notifications and Recents</string>
     <string translatable="false" name="focus_guard_detail">Enable Focus Launcher in Accessibility settings. The service checks the foreground app name and returns you home when a blocked app opens. Phone calls, the keyboard and system settings stay available. It does not close app processes. You can turn it off at any time.</string>
-    <string translatable="false" name="focus_guard_on">App guard enabled</string>
-    <string translatable="false" name="focus_guard_off">App guard off · launcher only</string>
+    <string translatable="false" name="focus_guard_on">App guard on</string>
+    <string translatable="false" name="focus_guard_off">App guard off</string>
     <string translatable="false" name="focus_save">Save</string>
     <string translatable="false" name="wallpaper_studio">Wallpapers</string>
     <string translatable="false" name="wallpaper_dunes">Dunes</string>
@@ -208,11 +214,11 @@
     <string translatable="false" name="wallpaper_earth">Earth · daily satellite view</string>
     <string translatable="false" name="wallpaper_earth_detail">Earth mode downloads a small NASA Blue Marble mosaic crop, then keeps it for day and night. A new date picks a new location. This is historical satellite imagery. Offline, you get a generated landscape until the download succeeds. Imagery: NASA / GSFC / Reto Stöckli.</string>
     <string translatable="false" name="focus_service_description">Locks the screen on double tap. During a focus timer, checks foreground app names and returns home when a blocked app opens. Phone calls, the keyboard and Settings remain available.</string>
-    <string translatable="false" name="focus_close_apps">Close blocked apps when focus starts · Shizuku</string>
-    <string translatable="false" name="focus_close_apps_detail">Android needs Shizuku access to force-stop other apps. Set up and start Shizuku, then authorize Focus Launcher. This closes blocked launchable apps in your profile; it can interrupt downloads and delay their notifications until you open them again. Phone, SMS, clock/alarms, the keyboard, Settings and allowed apps stay available. This option is off by default.</string>
+    <string translatable="false" name="focus_close_apps">Close locked apps on start</string>
+    <string translatable="false" name="focus_close_apps_detail">Android needs Shizuku access to force-stop other apps. Set up and start Shizuku, then authorize Focus Launcher. This closes the locked apps; it can interrupt their downloads and delay their notifications until you open them again. Phone, SMS, clock/alarms, the keyboard and Settings are never closed. This option is off by default.</string>
     <string translatable="false" name="focus_shizuku_authorize">Set up / authorize Shizuku</string>
-    <string translatable="false" name="focus_close_failed">Could not close apps. Start Shizuku and grant access in focus settings.</string>
-    <string translatable="false" name="focus_closed">Closed %1$d blocked apps</string>
+    <string translatable="false" name="focus_close_failed">Could not close apps. Start Shizuku and grant access.</string>
+    <string translatable="false" name="focus_closed">Closed %1$d locked apps</string>
     <string translatable="false" name="second_clock">Second clock</string>
     <string translatable="false" name="second_clock_search">Search city</string>
 </resources>

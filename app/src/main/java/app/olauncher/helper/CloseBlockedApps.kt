@@ -5,7 +5,6 @@ import android.content.Context
 import android.content.ServiceConnection
 import android.content.pm.PackageManager
 import android.os.IBinder
-import app.olauncher.data.Prefs
 import kotlinx.coroutines.*
 import rikka.shizuku.Shizuku
 import kotlin.coroutines.resume
@@ -20,11 +19,8 @@ class CloseBlockedApps(private val context: Context) {
     suspend fun close(): Int = withContext(Dispatchers.Main) {
         if (!available()) return@withContext -1
         val session = FocusSession(context)
-        val protected = session.essentialApps() + session.allowedApps
-        val packages = getAppsList(context, Prefs(context), includeHiddenApps = true)
-            .filterIsInstance<app.olauncher.data.AppModel.App>()
-            .filter { it.user == android.os.Process.myUserHandle() }
-            .map { it.appPackage }.distinct().filter { it !in protected }.toTypedArray()
+        val essentials = session.essentialApps()
+        val packages = session.lockedApps.filter { it !in essentials }.toTypedArray()
         val args = Shizuku.UserServiceArgs(ComponentName(context, AppStopService::class.java))
             .daemon(false).processNameSuffix("focus-stop").tag("focus-stop").version(1)
         var connection: ServiceConnection? = null

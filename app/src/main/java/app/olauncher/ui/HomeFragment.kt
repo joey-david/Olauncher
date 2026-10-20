@@ -85,18 +85,12 @@ class HomeFragment : BaseFragment(), View.OnClickListener, View.OnLongClickListe
         initSwipeTouchListener()
         initClickListeners()
         binding.focusPanel.focusToggle.setOnClickListener {
-            val session = focus
-            if (session.active || !session.configured) showFocusSettings { updateFocus() }
-            else {
-                session.start(); updateFocus()
-                if (session.closeBlockedApps) viewLifecycleOwner.lifecycleScope.launch {
-                    val count = app.olauncher.helper.CloseBlockedApps(requireContext()).close()
-                    if (isAdded) requireContext().showToast(if (count < 0) getString(R.string.focus_close_failed)
-                        else getString(R.string.focus_closed, count))
-                }
-            }
+            val remaining = focus.remaining
+            if (remaining > 0) {
+                val end = android.text.format.DateFormat.getTimeFormat(requireContext()).format(Date(System.currentTimeMillis() + remaining))
+                requireContext().showToast(getString(R.string.focus_locked_until, end))
+            } else showStartFocus { updateFocus() }
         }
-        binding.focusPanel.focusSettings.setOnClickListener { showFocusSettings { updateFocus() } }
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.RESUMED) {
                 while (true) { updateFocus(); delay(1000) }
@@ -107,14 +101,29 @@ class HomeFragment : BaseFragment(), View.OnClickListener, View.OnLongClickListe
     private fun updateFocus() {
         val session = focus
         val remaining = session.remaining
-        val seconds = (remaining + 999) / 1000
-        binding.focusPanel.focusToggle.text = if (remaining > 0)
-            getString(R.string.focus_remaining, String.format(Locale.getDefault(), "%02d:%02d", seconds / 60, seconds % 60))
-        else getString(R.string.focus_start) + " · ${session.minutes} min"
-        binding.focusPanel.focusProgress.progress = if (remaining > 0)
-            (remaining * 1000 / session.duration).toInt() else 1000
-        binding.focusPanel.focusGuardStatus.setText(if (focusGuardEnabled()) R.string.focus_guard_on else R.string.focus_guard_off)
+        val panel = binding.focusPanel
+        panel.focusTime.text = if (remaining > 0) FocusSession.clock(remaining) else FocusSession.label(session.minutes)
+        panel.focusProgress.progress = if (remaining > 0) (remaining * 1000 / session.duration).toInt() else 0
+        panel.focusCaption.text = if (remaining > 0)
+            getString(R.string.focus_focusing) + " · " + getString(if (focusGuardEnabled()) R.string.focus_guard_on else R.string.focus_guard_off)
+        else getString(R.string.focus_start)
+        panel.focusLock.isVisible = remaining > 0
+        if ((remaining > 0) != focusWasActive) dimLockedApps()
     }
+
+    private val essentials by lazy { focus.essentialApps() }
+    private var focusWasActive = false
+
+    /** Locked apps fade on the home screen while a session runs. */
+    private fun dimLockedApps() {
+        focusWasActive = focus.active
+        homeAppViews().forEachIndexed { index, view ->
+            view.alpha = if (focus.locks(prefs.getAppPackage(index + 1), essentials)) FocusSession.LOCKED_ALPHA else 1f
+        }
+    }
+
+    private fun homeAppViews() = listOf(binding.homeApp1, binding.homeApp2, binding.homeApp3, binding.homeApp4,
+        binding.homeApp5, binding.homeApp6, binding.homeApp7, binding.homeApp8)
 
     override fun onResume() {
         super.onResume()
@@ -213,11 +222,6 @@ class HomeFragment : BaseFragment(), View.OnClickListener, View.OnLongClickListe
     }
 
     private fun initObservers() {
-        if (prefs.firstSettingsOpen) {
-            binding.firstRunTips.visibility = View.VISIBLE
-            binding.setDefaultLauncher.visibility = View.GONE
-        } else binding.firstRunTips.visibility = View.GONE
-
         viewModel.refreshHome.observe(viewLifecycleOwner) {
             populateHomeScreen(it)
         }
@@ -230,7 +234,6 @@ class HomeFragment : BaseFragment(), View.OnClickListener, View.OnLongClickListe
                 prefs.homeBottomAlignment = false
                 setHomeAlignment()
             }
-            if (binding.firstRunTips.isVisible) return@Observer
             binding.setDefaultLauncher.isVisible = it.not() && prefs.hideSetDefaultLauncher.not()
         })
         viewModel.homeAppAlignment.observe(viewLifecycleOwner) {
@@ -298,6 +301,8 @@ class HomeFragment : BaseFragment(), View.OnClickListener, View.OnLongClickListe
         val verticalGravity = if (prefs.homeBottomAlignment) Gravity.BOTTOM else Gravity.CENTER_VERTICAL
         binding.homeAppsLayout.gravity = horizontalGravity or verticalGravity
         binding.dateTimeLayout.gravity = horizontalGravity
+        binding.focusPanel.focusRoot.gravity = horizontalGravity
+        binding.focusPanel.focusToggle.gravity = horizontalGravity
         binding.homeApp1.gravity = horizontalGravity
         binding.homeApp2.gravity = horizontalGravity
         binding.homeApp3.gravity = horizontalGravity
@@ -361,12 +366,11 @@ class HomeFragment : BaseFragment(), View.OnClickListener, View.OnLongClickListe
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q)
             populateScreenTime()
 
-        val views = listOf(binding.homeApp1, binding.homeApp2, binding.homeApp3, binding.homeApp4,
-            binding.homeApp5, binding.homeApp6, binding.homeApp7, binding.homeApp8)
-        views.forEachIndexed { index, textView ->
+        homeAppViews().forEachIndexed { index, textView ->
             textView.isVisible = index < prefs.homeAppsNum
             textView.text = prefs.getAppName(index + 1)
         }
+        dimLockedApps()
     }
 
     private fun hideHomeApps() {
