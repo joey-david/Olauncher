@@ -23,13 +23,13 @@ class LauncherBehaviorTest {
     private val focus get() = FocusSession(context)
 
     @Before fun setup() {
-        focus.stop()
+        context.getSharedPreferences("focus", Context.MODE_PRIVATE).edit().putLong("end", 0).commit()
         Prefs(context).apply {
             firstOpen = false; firstSettingsOpen = false
             dailyWallpaper = false; hideSetDefaultLauncher = true; homeAppsNum = 4
         }
     }
-    @After fun cleanup() { focus.stop() }
+    @After fun cleanup() { context.getSharedPreferences("focus", Context.MODE_PRIVATE).edit().putLong("end", 0).commit() }
 
     private fun home() {
         context.startActivity(Intent(context, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
@@ -69,7 +69,7 @@ class LauncherBehaviorTest {
         val camera = Intent(MediaStore.INTENT_ACTION_STILL_IMAGE_CAMERA).resolveActivity(context.packageManager)!!
         val prefs = Prefs(context)
         prefs.appPackageSwipeLeft = "" // implicit camera path
-        focus.apply { minutes = 1; allowedApps = emptySet(); start() }
+        focus.apply { minutes = 1; lockedApps = setOf(camera.packageName); start() }
         home()
         device.swipe(950, 1400, 100, 1400, 12)
         device.waitForIdle()
@@ -78,13 +78,13 @@ class LauncherBehaviorTest {
         device.swipe(950, 1400, 100, 1400, 12)
         device.waitForIdle()
         assertEquals(context.packageName, device.currentPackageName)
-        focus.stop()
+        context.getSharedPreferences("focus", Context.MODE_PRIVATE).edit().putLong("end", 0).commit()
         device.swipe(950, 1400, 100, 1400, 12)
         assertTrue(device.wait(Until.hasObject(By.pkg(camera.packageName)), 5000))
     }
 
     @Test fun countdownExpiresAndSurvivesActivityRecreation() {
-        focus.apply { minutes = 1; allowedApps = emptySet(); start() }
+        focus.apply { minutes = 1; lockedApps = emptySet(); start() }
         val remaining = focus.remaining
         home()
         device.pressHome(); home()
@@ -105,15 +105,15 @@ class LauncherBehaviorTest {
             device.executeShellCommand("settings put secure accessibility_enabled 1")
             SystemClock.sleep(1000)
             val camera = Intent(MediaStore.INTENT_ACTION_STILL_IMAGE_CAMERA).resolveActivity(context.packageManager)!!
-            focus.apply { minutes = 1; allowedApps = emptySet(); start() }
+            focus.apply { minutes = 1; lockedApps = setOf(camera.packageName); start() }
             home()
             device.executeShellCommand("am start -W -n ${camera.flattenToString()}")
             assertTrue("External launches must return home", device.wait(Until.hasObject(By.res(context.packageName, "focusToggle")), 5000))
-            focus.allowedApps = setOf(camera.packageName)
+            focus.lockedApps = emptySet()
             device.executeShellCommand("am start -W -n ${camera.flattenToString()}")
             assertTrue("Allowed camera stays open", device.wait(Until.hasObject(By.pkg(camera.packageName)), 5000))
         } finally {
-            focus.stop()
+            context.getSharedPreferences("focus", Context.MODE_PRIVATE).edit().putLong("end", 0).commit()
             if (old.isNullOrEmpty()) device.executeShellCommand("settings delete secure enabled_accessibility_services")
             else device.executeShellCommand("settings put secure enabled_accessibility_services $old")
         }

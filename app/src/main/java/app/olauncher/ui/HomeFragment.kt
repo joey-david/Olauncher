@@ -8,6 +8,7 @@ import android.content.res.Configuration
 import android.os.BatteryManager
 import android.os.Build
 import android.os.Bundle
+import android.provider.MediaStore
 import android.view.Gravity
 import android.view.LayoutInflater
 import android.util.TypedValue
@@ -46,8 +47,6 @@ import app.olauncher.helper.getUserHandleFromString
 import app.olauncher.helper.isPackageInstalled
 import app.olauncher.helper.openAlarmApp
 import app.olauncher.helper.openCalendar
-import app.olauncher.helper.openCameraApp
-import app.olauncher.helper.openDialerApp
 import app.olauncher.helper.setPlainWallpaperByTheme
 import app.olauncher.helper.startFocusedActivity
 import app.olauncher.helper.showToast
@@ -484,7 +483,7 @@ class HomeFragment : BaseFragment(), View.OnClickListener, View.OnLongClickListe
             shortcutId = prefs.shortcutIdSwipeRight,
             isShortcut = prefs.isShortcutSwipeRight,
             userString = prefs.appUserSwipeRight,
-            fallback = { openDialerApp(requireContext()) }
+            fallback = { openSwipeDefault(Intent(Intent.ACTION_DIAL), Constants.FLAG_SET_SWIPE_RIGHT_APP) }
         )
     }
 
@@ -497,8 +496,26 @@ class HomeFragment : BaseFragment(), View.OnClickListener, View.OnLongClickListe
             shortcutId = prefs.shortcutIdSwipeLeft,
             isShortcut = prefs.isShortcutSwipeLeft,
             userString = prefs.appUserSwipeLeft,
-            fallback = { openCameraApp(requireContext()) }
+            fallback = { openSwipeDefault(Intent(MediaStore.INTENT_ACTION_STILL_IMAGE_CAMERA), Constants.FLAG_SET_SWIPE_LEFT_APP) }
         )
+    }
+
+    private fun openSwipeDefault(intent: Intent, selectionFlag: Int) {
+        val context = requireContext()
+        val resolved = intent.resolveActivity(context.packageManager)
+        val handlers = context.packageManager.queryIntentActivities(intent, 0)
+        if (resolved != null && handlers.any {
+                it.activityInfo.packageName == resolved.packageName && it.activityInfo.name == resolved.className
+            }) {
+            try {
+                context.startFocusedActivity(intent)
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        } else {
+            // Android's chooser does not save a swipe app in our preferences.
+            showAppList(selectionFlag)
+        }
     }
 
     private fun showAppList(flag: Int, rename: Boolean = false, includeHiddenApps: Boolean = false) {

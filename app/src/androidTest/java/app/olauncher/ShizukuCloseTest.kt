@@ -23,7 +23,7 @@ class ShizukuCloseTest {
 
     private fun pid(pkg: String) = device.executeShellCommand("pidof $pkg").trim()
 
-    @After fun cleanup() { FocusSession(context).stop() }
+    @After fun cleanup() { context.getSharedPreferences("focus", android.content.Context.MODE_PRIVATE).edit().putLong("end", 0).commit() }
 
     @Test fun closesBlockedAppsButKeepsAllowedAndClock() {
         Assume.assumeTrue(Shizuku.pingBinder())
@@ -57,7 +57,7 @@ class ShizukuCloseTest {
         }
         assertTrue(pid(blocked).isNotEmpty() && pid(allowed).isNotEmpty())
 
-        session.allowedApps = setOf(allowed)
+        session.lockedApps = setOf(blocked)
         session.minutes = 1
         session.start()
         val stopped = runBlocking { CloseBlockedApps(context).close() }
