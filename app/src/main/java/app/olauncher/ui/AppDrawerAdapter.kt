@@ -14,6 +14,8 @@ import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import app.olauncher.R
+import app.olauncher.helper.MindfulPause
+import app.olauncher.helper.showToast
 import app.olauncher.helper.FocusSession
 import app.olauncher.data.AppModel
 import app.olauncher.data.Constants
@@ -271,6 +273,9 @@ class AppDrawerAdapter(
                         true -> 0.5f
                         false -> 1.0f
                     }
+                    appPause.text = root.context.getString(
+                        if (MindfulPause(root.context).isPaused(appModel.appPackage)) R.string.pause_menu_off else R.string.pause_menu,
+                    )
                     appHideLayout.visibility = View.VISIBLE
                     // Only allow renaming non hidden apps
                     appRename.isVisible = flag != Constants.FLAG_HIDDEN_APPS
@@ -317,6 +322,12 @@ class AppDrawerAdapter(
                     )
                     renameLayout.visibility = View.GONE
                 }
+            }
+            appPause.setOnClickListener {
+                val paused = MindfulPause(root.context).toggle(appModel.appPackage)
+                root.context.showToast(root.context.getString(if (paused) R.string.pause_enabled else R.string.pause_disabled, appModel.appLabel))
+                appHideLayout.visibility = View.GONE
+                appTitle.visibility = View.VISIBLE
             }
             appInfo.setOnClickListener { appInfoListener(appModel) }
             appDelete.setOnClickListener { appDeleteListener(appModel) }

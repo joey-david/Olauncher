@@ -93,7 +93,7 @@ fun Fragment.showWallpaperSettings(requestLocation: () -> Unit, onChanged: () ->
         }.setNegativeButton(android.R.string.cancel, null)
         .setNeutralButton(R.string.wallpaper_photo) { _, _ ->
             prefs.dailyWallpaper = false
-            androidx.work.WorkManager.getInstance(context).cancelUniqueWork(app.olauncher.data.Constants.WALLPAPER_WORKER_NAME)
+            app.olauncher.helper.WallpaperWorker.cancel(context)
             onChanged()
             try { startActivity(Intent.createChooser(Intent(Intent.ACTION_SET_WALLPAPER), getString(R.string.wallpaper_photo))) }
             catch (_: Exception) { context.showToast(R.string.unable_to_open_app) }

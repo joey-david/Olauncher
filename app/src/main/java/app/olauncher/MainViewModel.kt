@@ -11,7 +11,6 @@ import android.os.UserManager
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.viewModelScope
-import androidx.work.WorkManager
 import app.olauncher.data.AppModel
 import app.olauncher.data.Constants
 import app.olauncher.data.Prefs
@@ -38,6 +37,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val appContext by lazy { application.applicationContext }
     private val prefs = Prefs(appContext)
     private val focus by lazy { app.olauncher.helper.FocusSession(appContext) }
+    private val pause by lazy { app.olauncher.helper.MindfulPause(appContext) }
 
     val firstOpen = MutableLiveData<Boolean>()
     val refreshHome = MutableLiveData<Boolean>()
@@ -105,6 +105,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     private fun launchShortcut(appModel: AppModel.PinnedShortcut) {
         if (!focus.checkLaunch(appModel.appPackage)) return
+        if (pause.intercept(appModel.appPackage, null, appModel.user, appModel.shortcutId)) return
         val launcher = appContext.getSystemService(Context.LAUNCHER_APPS_SERVICE) as LauncherApps
         try {
             launcher.startShortcut(appModel.appPackage, appModel.shortcutId, null, null, appModel.user)
@@ -355,6 +356,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     private fun launchApp(packageName: String, activityClassName: String?, userHandle: UserHandle) {
         if (!focus.checkLaunch(packageName)) return
+        if (pause.intercept(packageName, activityClassName, userHandle)) return
         val launcher = appContext.getSystemService(LauncherApps::class.java)
         // Saved components are the normal path. Resolve only when an update invalidates one.
         if (!activityClassName.isNullOrBlank()) {
@@ -420,7 +422,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun setWallpaperWorker() { WallpaperWorker.update(appContext) }
 
     fun cancelWallpaperWorker() {
-        WorkManager.getInstance(appContext).cancelUniqueWork(Constants.WALLPAPER_WORKER_NAME)
+        WallpaperWorker.cancel(appContext)
         prefs.dailyWallpaperUrl = ""
         prefs.dailyWallpaper = false
     }

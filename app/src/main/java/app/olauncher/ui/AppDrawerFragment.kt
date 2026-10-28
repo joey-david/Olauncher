@@ -19,7 +19,9 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import androidx.recyclerview.widget.RecyclerView.Recycler
 import app.olauncher.MainViewModel
+import androidx.core.view.isVisible
 import app.olauncher.R
+import app.olauncher.helper.Calculator
 import app.olauncher.helper.FocusSession
 import app.olauncher.data.AppModel
 import app.olauncher.data.Constants
@@ -106,6 +108,7 @@ class AppDrawerFragment : BaseFragment() {
             }
 
             override fun onQueryTextChange(newText: String): Boolean {
+                showCalculation(newText)
                 try {
                     adapter.allowAutoLaunch = !isSearchComposing()
                     adapter.filter.filter(newText)
@@ -118,6 +121,19 @@ class AppDrawerFragment : BaseFragment() {
                 return false
             }
         })
+    }
+
+    /** "12*7" in search shows "= 84"; tap copies it. */
+    private fun showCalculation(query: String) {
+        val result = Calculator.evaluate(query)
+        binding.calcResult.isVisible = result != null
+        if (result == null) return
+        binding.calcResult.text = "= $result"
+        binding.calcResult.setOnClickListener {
+            val clipboard = requireContext().getSystemService(android.content.ClipboardManager::class.java)
+            clipboard?.setPrimaryClip(android.content.ClipData.newPlainText("result", result))
+            requireContext().showToast(getString(R.string.copied_result, result))
+        }
     }
 
     private fun isSearchComposing(): Boolean {

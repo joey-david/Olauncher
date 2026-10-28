@@ -51,6 +51,17 @@
 
     </LinearLayout>
 
+    <TextView
+        android:id="@+id/calcResult"
+        style="@style/TextLarge"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="?android:attr/selectableItemBackground"
+        android:gravity="end"
+        android:paddingHorizontal="24dp"
+        android:paddingVertical="8dp"
+        android:visibility="gone" />
+
     <Space
         android:layout_width="match_parent"
         android:layout_height="0dp"

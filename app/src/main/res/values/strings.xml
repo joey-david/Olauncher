@@ -221,4 +221,20 @@
     <string translatable="false" name="focus_closed">Closed %1$d locked apps</string>
     <string translatable="false" name="second_clock">Second clock</string>
     <string translatable="false" name="second_clock_search">Search city</string>
+    <string name="pause_menu">Pause</string>
+    <string name="pause_menu_off">Unpause</string>
+    <string name="pause_enabled">%1$s will ask you to breathe first</string>
+    <string name="pause_disabled">%1$s opens instantly again</string>
+    <string name="pause_breathe_in">Breathe in…</string>
+    <string name="pause_breathe_out">…and out</string>
+    <string name="pause_open_in">Open in %1$d</string>
+    <string name="pause_open">Open</string>
+    <string name="pause_not_now">Not now</string>
+    <string name="pause_usage_minutes">%1$d min today</string>
+    <string name="pause_usage_hours">%1$dh %2$02dm today</string>
+    <plurals name="pause_attempts">
+        <item quantity="one">First time opening %2$s today</item>
+        <item quantity="other">%1$d times opening %2$s today</item>
+    </plurals>
+    <string name="copied_result">Copied %1$s</string>
 </resources>
