@@ -53,7 +53,7 @@ class DailySetupActivity : AppCompatActivity() {
             explain("App guard", "Enable Focus Launcher in Accessibility to block apps and apply the unlock pause. Calls stay available.", Settings.ACTION_ACCESSIBILITY_SETTINGS)
         }
         binding.accessInbox.setOnClickListener {
-            explain("Inbox", "Allow notification access. Held text stays on this phone and is not backed up.", Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)
+            explain("Inbox", "If Android marks this app as restricted: open App info, tap the three-dot menu, then Allow restricted settings. Return here and enable notification access. Held text stays on this phone and is not backed up.", Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)
         }
         binding.accessQuiet.setOnClickListener {
             if (QuietMode.hasPolicyAccess(this)) { QuietMode.restore(this); refresh() }
@@ -86,6 +86,10 @@ class DailySetupActivity : AppCompatActivity() {
                     }
                 }.show()
         }
+        binding.chosenSummary.setOnClickListener {
+            startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:$packageName")))
+        }
+        binding.chosenSummary.isClickable = true
         binding.rulesDetails.setOnClickListener {
             AlertDialog.Builder(this).setTitle("Rules")
                 .setMessage("3 slots per day. 10 minutes each. No pause or refund. Resets at midnight.\n\n" +
@@ -128,6 +132,7 @@ class DailySetupActivity : AppCompatActivity() {
             }.setNegativeButton(android.R.string.cancel, null).setPositiveButton("Save") { _, _ ->
                 if (alerts) { notifications = selected; choseNotifications = true }
                 else { allowed = selected; choseAllowed = true }
+                focus.saveChoices(allowed, notifications)
                 refresh()
             }.show()
     }
@@ -145,7 +150,7 @@ class DailySetupActivity : AppCompatActivity() {
         binding.chooseEssentials.text = "Apps  ·  ${allowed.size}"
         binding.chooseNotifications.text = "Alerts  ·  ${notifications.size}"
         val labels = { selected: Set<String> -> apps.filter { it.appPackage in selected }.joinToString { it.appLabel }.ifBlank { "None" } }
-        binding.chosenSummary.text = "Apps: ${labels(allowed)}\nAlerts: ${labels(notifications)}"
+        binding.chosenSummary.text = "Apps: ${labels(allowed)}\nAlerts: ${labels(notifications)}\nRestricted settings? Tap for App info."
         access(binding.accessHome, "Launcher", isOlauncherDefault(this))
         access(binding.accessGuard, "App guard", MyAccessibilityService.isConnected)
         access(binding.accessInbox, "Inbox", QuietNotifications.isConnected)

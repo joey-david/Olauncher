@@ -25,6 +25,11 @@ class FocusSession(
     val allowedApps: Set<String> get() = prefs.getStringSet("allowed", emptySet())!!.toSet()
     val notificationApps: Set<String> get() = prefs.getStringSet("notifications", emptySet())!!.toSet()
 
+    fun saveChoices(allowed: Set<String>, notifications: Set<String>) = synchronized(lock) {
+        if (needsSetup) prefs.edit().putStringSet("allowed", allowed.toSet())
+            .putStringSet("notifications", notifications.toSet()).commit()
+    }
+
     /** Choices can change only after an app version update. The budget never resets on update. */
     fun configure(allowed: Set<String>, notifications: Set<String>): Boolean = synchronized(lock) {
         if (!needsSetup) return false
@@ -114,7 +119,7 @@ class FocusSession(
 
     /** New installs and apps installed later are blocked unless explicitly chosen. */
     fun locks(packageName: String, essentials: Set<String>): Boolean =
-        packageName.isNotBlank() && !active && packageName !in allowedApps && packageName !in essentials
+        !needsSetup && packageName.isNotBlank() && !active && packageName !in allowedApps && packageName !in essentials
 
     val blockedMessage: String get() = when {
         !configured -> "Choose your apps first"

@@ -25,6 +25,15 @@ class DailyBudgetTest {
     @After fun cleanup() { prefs.edit().clear().commit() }
     private fun awake() { focus.noteUnlock(); elapsed += FocusSession.MORNING_MS }
 
+    @Test fun draftChoicesSurviveReopeningBeforeAccessIsGranted() {
+        prefs.edit().clear().commit()
+        focus.saveChoices(setOf("chosen.app"), setOf("notify.app"))
+        assertEquals(setOf("chosen.app"), FocusSession(context).allowedApps)
+        assertEquals(setOf("notify.app"), FocusSession(context).notificationApps)
+        assertFalse(focus.locks("org.mozilla.firefox", focus.essentialApps()))
+        assertTrue(focus.needsSetup)
+    }
+
     @Test fun waitsFullThirtyMinutesAndTaskTicksCannotSkipIt() {
         focus.noteUnlock()
         repeat(3) { focus.toggleMorningStep(it) }
