@@ -44,8 +44,8 @@ class DailySetupActivity : AppCompatActivity() {
         focus = FocusSession(this)
         allowed = savedInstanceState?.getStringArrayList("allowed")?.toSet() ?: focus.allowedApps
         notifications = savedInstanceState?.getStringArrayList("notifications")?.toSet() ?: focus.notificationApps
-        choseAllowed = savedInstanceState?.getBoolean("choseAllowed") ?: focus.configured
-        choseNotifications = savedInstanceState?.getBoolean("choseNotifications") ?: focus.configured
+        choseAllowed = savedInstanceState?.getBoolean("choseAllowed") ?: (focus.configured || focus.allowedApps.isNotEmpty() || focus.notificationApps.isNotEmpty())
+        choseNotifications = savedInstanceState?.getBoolean("choseNotifications") ?: (focus.configured || focus.allowedApps.isNotEmpty() || focus.notificationApps.isNotEmpty())
         binding.chooseEssentials.setOnClickListener { choose(false) }
         binding.chooseNotifications.setOnClickListener { choose(true) }
         binding.accessHome.setOnClickListener { startActivity(Intent(Settings.ACTION_HOME_SETTINGS)) }
