@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" android:layout_width="match_parent" android:layout_height="match_parent" android:orientation="vertical" android:focusableInTouchMode="true" android:fitsSystemWindows="true" android:background="?attr/primaryInverseColor" android:paddingHorizontal="24dp" android:paddingVertical="24dp">
+    <TextView style="@style/DailyHeading" android:text="@string/deadline_name" />
+    <EditText android:id="@+id/deadlineSearch" android:layout_width="match_parent" android:layout_height="52dp" android:layout_marginTop="16dp" android:hint="@string/deadline_search" android:inputType="text" android:singleLine="true" android:textColor="?attr/primaryColor" android:textColorHint="?attr/primaryColorTrans50" />
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal">
+        <Button android:id="@+id/deadlineSortDate" style="@style/DailyButton" android:layout_width="0dp" android:layout_weight="1" />
+        <Button android:id="@+id/deadlineSortName" style="@style/DailyButton" android:layout_width="0dp" android:layout_weight="1" />
+    </LinearLayout>
+    <androidx.recyclerview.widget.RecyclerView android:id="@+id/deadlineList" android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1" />
+    <TextView android:id="@+id/deadlineListEmpty" style="@style/DailyBody" android:layout_height="0dp" android:layout_weight="1" android:gravity="center_vertical" android:text="@string/deadline_empty" />
+    <Button android:id="@+id/deadlineAdd" style="@style/DailyButton" android:text="@string/deadline_add" />
+    <Button android:id="@+id/deadlineBack" style="@style/DailyButton" android:text="@string/daily_back" />
+</LinearLayout>

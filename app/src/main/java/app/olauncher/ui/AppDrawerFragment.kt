@@ -262,7 +262,7 @@ class AppDrawerFragment : BaseFragment() {
                 val scrollRange = super.scrollVerticallyBy(dx, recycler, state)
                 val overScroll = dx - scrollRange
                 if (overScroll < -10 && binding.recyclerView.scrollState == RecyclerView.SCROLL_STATE_DRAGGING)
-                    checkMessageAndExit()
+                    closeDrawer()
                 return scrollRange
             }
         }
@@ -374,19 +374,15 @@ class AppDrawerFragment : BaseFragment() {
         }
     }
 
-    private fun checkMessageAndExit() {
+    private fun closeDrawer() {
         findNavController().popBackStack()
-        if (flag == Constants.FLAG_LAUNCH_APP)
-            viewModel.checkForMessages.call()
     }
 
     override fun onStart() {
         super.onStart()
         val focus = FocusSession(requireContext())
-        if (focus.active) {
-            val essentials = focus.essentialApps()
-            adapter.isLocked = { focus.locks(it, essentials) }
-        } else adapter.isLocked = { false }
+        val essentials = focus.essentialApps()
+        adapter.isLocked = { focus.locks(it, essentials) }
         adapter.notifyDataSetChanged()
         cachedIsCjkKeyboard = null
         binding.search.showKeyboard(prefs.autoShowKeyboard)

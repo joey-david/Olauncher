@@ -115,7 +115,7 @@ private fun Fragment.showWallpaperCoordinates(onChanged: () -> Unit) {
     val latitude = coordinate(R.string.wallpaper_latitude, prefs.wallpaperLatitude)
     val longitude = coordinate(R.string.wallpaper_longitude, prefs.wallpaperLongitude)
     val dialog = AlertDialog.Builder(context).setTitle(R.string.wallpaper_coordinates).setView(panel)
-        .setNegativeButton(android.R.string.cancel, null).setPositiveButton(R.string.focus_save, null).create()
+        .setNegativeButton(android.R.string.cancel, null).setPositiveButton(R.string.daily_save, null).create()
     dialog.setOnShowListener {
         dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
             val lat = latitude.text.toString().replace(',', '.').toDoubleOrNull()

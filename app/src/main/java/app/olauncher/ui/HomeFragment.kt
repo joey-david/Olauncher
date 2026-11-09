@@ -5,31 +5,29 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.LauncherApps
 import android.content.res.Configuration
-import android.os.BatteryManager
 import android.os.Build
 import android.os.Bundle
 import android.provider.MediaStore
 import android.view.Gravity
 import android.view.LayoutInflater
-import android.util.TypedValue
 import android.view.View
 import android.view.ViewGroup
 import android.view.WindowInsets
 import android.widget.FrameLayout
 import android.widget.TextView
 import android.widget.Toast
-import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.os.bundleOf
 import androidx.core.view.isVisible
-import androidx.core.view.updatePadding
-import androidx.core.view.setPadding
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import app.olauncher.helper.FocusSession
+import app.olauncher.helper.QuietMode
+import app.olauncher.helper.QuietNotifications
+import androidx.appcompat.app.AlertDialog
 import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProvider
 import androidx.navigation.fragment.findNavController
@@ -38,8 +36,8 @@ import app.olauncher.R
 import app.olauncher.data.AppModel
 import app.olauncher.data.Constants
 import app.olauncher.data.Prefs
+import app.olauncher.data.DeadlineStore
 import app.olauncher.databinding.FragmentHomeBinding
-import app.olauncher.helper.appUsagePermissionGranted
 import app.olauncher.helper.dpToPx
 import app.olauncher.helper.expandNotificationDrawer
 import app.olauncher.helper.getChangedAppTheme
@@ -55,7 +53,6 @@ import app.olauncher.listener.ViewSwipeTouchListener
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
-import java.util.TimeZone
 
 class HomeFragment : BaseFragment(), View.OnClickListener, View.OnLongClickListener {
 
@@ -64,6 +61,7 @@ class HomeFragment : BaseFragment(), View.OnClickListener, View.OnLongClickListe
     private lateinit var viewModel: MainViewModel
     private lateinit var deviceManager: DevicePolicyManager
 
+    private var dailyDialog: AlertDialog? = null
     private var _binding: FragmentHomeBinding? = null
     private val binding get() = _binding!!
 
@@ -86,13 +84,19 @@ class HomeFragment : BaseFragment(), View.OnClickListener, View.OnLongClickListe
         setHomeAlignment(prefs.homeAlignment)
         initSwipeTouchListener()
         initClickListeners()
-        binding.focusPanel.focusToggle.setOnClickListener {
-            val remaining = focus.remaining
-            if (remaining > 0) {
-                val end = android.text.format.DateFormat.getTimeFormat(requireContext()).format(Date(System.currentTimeMillis() + remaining))
-                requireContext().showToast(getString(R.string.focus_locked_until, end))
-            } else showStartFocus { updateFocus() }
+        binding.slotAction.setOnClickListener { useSlot() }
+        binding.protectionStatus.setOnClickListener {
+            startActivity(Intent(requireContext(), DailySetupActivity::class.java))
         }
+        binding.morningPrompt.setOnClickListener { showMorning() }
+        binding.deadlinePanel.openDeadlines.setOnClickListener {
+            startActivity(Intent(requireContext(), DeadlinesActivity::class.java))
+        }
+        binding.deadlinePanel.addDeadline.setOnClickListener {
+            startActivity(Intent(requireContext(), DeadlinesActivity::class.java).putExtra("add", true))
+        }
+        binding.dateTimeLayout.addOnLayoutChangeListener { _, _, _, _, _, _, _, _, _ -> fitFavorites() }
+        binding.deadlinePanel.root.addOnLayoutChangeListener { _, _, _, _, _, _, _, _, _ -> fitFavorites() }
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.RESUMED) {
                 while (true) { updateFocus(); delay(1000) }
@@ -100,25 +104,82 @@ class HomeFragment : BaseFragment(), View.OnClickListener, View.OnLongClickListe
         }
     }
 
+    private fun fitFavorites() {
+        if (resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE) return
+        val scroll = binding.homeAppsLayout.parent as View
+        val params = scroll.layoutParams as FrameLayout.LayoutParams
+        val top = binding.dateTimeLayout.bottom + 12.dpToPx()
+        val bottom = binding.root.height - binding.deadlinePanel.root.top + 12.dpToPx()
+        if (top != params.topMargin || bottom != params.bottomMargin) {
+            params.topMargin = top
+            params.bottomMargin = bottom
+            scroll.layoutParams = params
+        }
+    }
+
     private fun updateFocus() {
-        val session = focus
-        val remaining = session.remaining
-        val panel = binding.focusPanel
-        panel.focusTime.text = if (remaining > 0) FocusSession.clock(remaining) else FocusSession.label(session.minutes)
-        panel.focusProgress.progress = if (remaining > 0) (remaining * 1000 / session.duration).toInt() else 0
-        panel.focusCaption.text = if (remaining > 0)
-            getString(R.string.focus_focusing) + " · " + getString(if (focusGuardEnabled()) R.string.focus_guard_on else R.string.focus_guard_off)
-        else getString(R.string.focus_start)
-        panel.focusLock.isVisible = remaining > 0
-        if ((remaining > 0) != focusWasActive) dimLockedApps()
+        val remaining = focus.remaining
+        val morning = focus.morningRemaining
+        val left = focus.slotsLeft
+        val ready = dailyProtectionReady(requireContext())
+        binding.slotAction.text = when {
+            focus.needsSetup -> getString(R.string.daily_configure)
+            remaining > 0 -> "${FocusSession.clock(remaining)}  ·  Inbox"
+            !ready -> getString(R.string.daily_repair)
+            left == 0 -> "No slots left"
+            morning > 0 -> "Slots  ·  ${FocusSession.clock(morning)}"
+            else -> "$left × 10 min"
+        }
+        binding.slotAction.isEnabled = focus.needsSetup || remaining > 0 || !ready || left > 0
+        binding.protectionStatus.isVisible = !ready || QuietNotifications.bypassWarnings().isNotEmpty()
+        binding.protectionStatus.text = if (QuietNotifications.bypassWarnings().isNotEmpty()) "DND overrides" else "Access required"
+        val deadline = DeadlineStore(requireContext()).next()
+        binding.deadlinePanel.deadlineTitle.text = deadline?.title ?: "Deadlines"
+        binding.deadlinePanel.deadlineDate.isVisible = deadline != null
+        binding.deadlinePanel.deadlineDate.text = deadline?.let { deadlineDate(requireContext(), it.at) }
+        binding.morningPrompt.isVisible = morning > 0 && focus.configured && remaining == 0L
+        binding.morningPrompt.text = listOf("Go outside", "Drink water", "Have breakfast")[((FocusSession.MORNING_MS - morning) / 600_000).toInt().coerceIn(0, 2)]
+        dimLockedApps()
+    }
+
+    fun closeDailyDialog() { dailyDialog?.dismiss(); dailyDialog = null }
+
+    private fun useSlot() {
+        closeDailyDialog()
+        when {
+            focus.needsSetup -> startActivity(Intent(requireContext(), DailySetupActivity::class.java))
+            focus.active -> startActivity(Intent(requireContext(), NotificationInboxActivity::class.java))
+            !dailyProtectionReady(requireContext()) -> startActivity(Intent(requireContext(), DailySetupActivity::class.java))
+            focus.slotsLeft == 0 -> Unit
+            focus.morningRemaining > 0 -> showMorning()
+            else -> dailyDialog = AlertDialog.Builder(requireContext()).setTitle("Start 10 minutes?")
+                .setNegativeButton("Cancel", null).setPositiveButton("Start") { _, _ ->
+                    QuietNotifications.captureForSlot()
+                    if (dailyProtectionReady(requireContext()) && focus.start()) {
+                        QuietMode.sync(requireContext())
+                        updateFocus()
+                        startActivity(Intent(requireContext(), NotificationInboxActivity::class.java))
+                    } else updateFocus()
+                }.show()
+        }
+    }
+
+    private fun showMorning() {
+        closeDailyDialog()
+        val items = arrayOf("Go outside", "Drink water", "Have breakfast")
+        val checked = BooleanArray(3) { focus.morningSteps and (1 shl it) != 0 }
+        dailyDialog = AlertDialog.Builder(requireContext()).setTitle(if (focus.morningRemaining > 0)
+            "Morning  ·  ${FocusSession.clock(focus.morningRemaining)}" else "Morning")
+            .setMultiChoiceItems(items, checked) { _, index, _ -> focus.toggleMorningStep(index) }
+            .setPositiveButton("Done", null)
+            .setNeutralButton("Details") { _, _ ->
+                dailyDialog = AlertDialog.Builder(requireContext()).setMessage(R.string.daily_wake_detail).setPositiveButton(android.R.string.ok, null).show()
+            }.show()
     }
 
     private val essentials by lazy { focus.essentialApps() }
-    private var focusWasActive = false
 
-    /** Locked apps fade on the home screen while a session runs. */
     private fun dimLockedApps() {
-        focusWasActive = focus.active
         homeAppViews().forEachIndexed { index, view ->
             view.alpha = if (focus.locks(prefs.getAppPackage(index + 1), essentials)) FocusSession.LOCKED_ALPHA else 1f
         }
@@ -129,7 +190,12 @@ class HomeFragment : BaseFragment(), View.OnClickListener, View.OnLongClickListe
 
     override fun onResume() {
         super.onResume()
+        val keyguard = requireContext().getSystemService(android.app.KeyguardManager::class.java)
+        if (!keyguard.isKeyguardLocked) focus.noteUnlock()
+        QuietMode.sync(requireContext())
+        binding.root.setBackgroundColor(if (prefs.dailyWallpaper) android.graphics.Color.TRANSPARENT else requireContext().getColor(app.olauncher.R.color.black))
         populateHomeScreen(false)
+        updateFocus()
         viewModel.isOlauncherDefault()
         if (prefs.showStatusBar) showStatusBar()
         else hideStatusBar()
@@ -140,10 +206,9 @@ class HomeFragment : BaseFragment(), View.OnClickListener, View.OnLongClickListe
             R.id.lock -> {}
             // Home button for recents feature disabled
             // R.id.recents -> {}
-            R.id.clock, R.id.clock2 -> openClockApp()
+            R.id.clock -> openClockApp()
             R.id.date -> openCalendarApp()
             R.id.setDefaultLauncher -> viewModel.resetLauncherLiveData.call()
-            R.id.tvScreenTime -> openScreenTimeDigitalWellbeing()
 
             else -> {
                 try { // Launch app
@@ -204,13 +269,6 @@ class HomeFragment : BaseFragment(), View.OnClickListener, View.OnLongClickListe
                 prefs.calendarAppUser = ""
             }
 
-            R.id.tvScreenTime -> {
-                showAppList(Constants.FLAG_SET_SCREEN_TIME_APP)
-                prefs.screenTimeAppPackage = ""
-                prefs.screenTimeAppClassName = ""
-                prefs.screenTimeAppUser = ""
-            }
-
             R.id.setDefaultLauncher -> {
                 prefs.hideSetDefaultLauncher = true
                 binding.setDefaultLauncher.visibility = View.GONE
@@ -244,9 +302,6 @@ class HomeFragment : BaseFragment(), View.OnClickListener, View.OnLongClickListe
         viewModel.toggleDateTime.observe(viewLifecycleOwner) {
             populateDateTime()
         }
-        viewModel.screenTimeValue.observe(viewLifecycleOwner) {
-            it?.let { binding.tvScreenTime.text = it }
-        }
         // Home button for recents feature disabled
         // viewModel.showRecentApps.observe(viewLifecycleOwner) {
         //     binding.recents.performClick()
@@ -256,6 +311,7 @@ class HomeFragment : BaseFragment(), View.OnClickListener, View.OnLongClickListe
     private fun initSwipeTouchListener() {
         val context = requireContext()
         binding.mainLayout.setOnTouchListener(getSwipeGestureListener(context))
+        binding.homeAppsLayout.setOnTouchListener(getSwipeGestureListener(context))
         binding.homeApp1.setOnTouchListener(getViewSwipeTouchListener(context, binding.homeApp1))
         binding.homeApp2.setOnTouchListener(getViewSwipeTouchListener(context, binding.homeApp2))
         binding.homeApp3.setOnTouchListener(getViewSwipeTouchListener(context, binding.homeApp3))
@@ -272,13 +328,10 @@ class HomeFragment : BaseFragment(), View.OnClickListener, View.OnLongClickListe
         // binding.recents.setOnClickListener(this)
         binding.clock.setOnClickListener(this)
         binding.date.setOnClickListener(this)
-        binding.clock2.setOnClickListener(this)
         binding.clock.setOnLongClickListener(this)
         binding.date.setOnLongClickListener(this)
         binding.setDefaultLauncher.setOnClickListener(this)
         binding.setDefaultLauncher.setOnLongClickListener(this)
-        binding.tvScreenTime.setOnClickListener(this)
-        binding.tvScreenTime.setOnLongClickListener(this)
 
         // These fire only on d-pad/keyboard events; touch is consumed by ViewSwipeTouchListener
         binding.homeApp1.setOnClickListener(this)
@@ -304,9 +357,9 @@ class HomeFragment : BaseFragment(), View.OnClickListener, View.OnLongClickListe
         binding.homeAppsLayout.gravity = horizontalGravity or verticalGravity
         binding.dateTimeLayout.gravity = horizontalGravity
         binding.clockBox.gravity = horizontalGravity
-        binding.clock2Box.gravity = horizontalGravity
-        binding.focusPanel.focusRoot.gravity = horizontalGravity
-        binding.focusPanel.focusToggle.gravity = horizontalGravity
+        binding.deadlinePanel.openDeadlines.gravity = horizontalGravity or Gravity.CENTER_VERTICAL
+        binding.deadlinePanel.deadlineTitle.gravity = horizontalGravity
+        binding.deadlinePanel.deadlineDate.gravity = horizontalGravity
         binding.homeApp1.gravity = horizontalGravity
         binding.homeApp2.gravity = horizontalGravity
         binding.homeApp3.gravity = horizontalGravity
@@ -317,73 +370,19 @@ class HomeFragment : BaseFragment(), View.OnClickListener, View.OnLongClickListe
         binding.homeApp8.gravity = horizontalGravity
     }
 
-    /** With a second time zone the two clocks sit side by side, a little smaller, each over its city. */
-    private fun showClocks() {
-        val zone = prefs.secondClockZone
-        val dual = zone.isNotEmpty() && binding.clock.isVisible
-        binding.clock2Box.isVisible = dual
-        binding.clockCity.isVisible = dual
-        val size = resources.getDimension(R.dimen.time_size) * if (dual) 0.8f else 1f
-        for (clock in listOf(binding.clock, binding.clock2)) clock.setTextSize(TypedValue.COMPLEX_UNIT_PX, size)
-        binding.clocksRow.updatePadding(bottom = if (dual) (8 * resources.displayMetrics.density).toInt() else 0)
-        if (!dual) return
-        binding.clock2.timeZone = zone
-        binding.clockCity.text = zoneCity(TimeZone.getDefault().id)
-        binding.clock2City.text = zoneCity(zone)
-    }
-
     private fun populateDateTime() {
-        binding.dateTimeLayout.isVisible = prefs.dateTimeVisibility != Constants.DateTime.OFF
         binding.clock.isVisible = Constants.DateTime.isTimeVisible(prefs.dateTimeVisibility)
         binding.date.isVisible = Constants.DateTime.isDateVisible(prefs.dateTimeVisibility)
-        showClocks()
 
-//        var dateText = SimpleDateFormat("EEE, d MMM", Locale.getDefault()).format(Date())
         val dateFormat = SimpleDateFormat("EEE, d MMM", Locale.getDefault())
-        var dateText = dateFormat.format(Date())
+        val dateText = dateFormat.format(Date())
 
-        if (!prefs.showStatusBar) {
-            val battery = (requireContext().getSystemService(Context.BATTERY_SERVICE) as BatteryManager)
-                .getIntProperty(BatteryManager.BATTERY_PROPERTY_CAPACITY)
-            if (battery > 0)
-                dateText = getString(R.string.day_battery, dateText, battery)
-        }
         binding.date.text = dateText.replace(".,", ",")
-    }
-
-    @RequiresApi(Build.VERSION_CODES.Q)
-    private fun populateScreenTime() {
-        if (requireContext().appUsagePermissionGranted().not()) return
-
-        viewModel.getTodaysScreenTime()
-        binding.tvScreenTime.visibility = View.VISIBLE
-
-        val isLandscape = resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
-        val horizontalMargin = if (isLandscape) 64.dpToPx() else 10.dpToPx()
-        val marginTop = if (isLandscape) {
-            if (prefs.dateTimeVisibility == Constants.DateTime.DATE_ONLY) 36.dpToPx() else 56.dpToPx()
-        } else {
-            if (prefs.dateTimeVisibility == Constants.DateTime.DATE_ONLY) 45.dpToPx() else 72.dpToPx()
-        }
-        val params = FrameLayout.LayoutParams(
-            FrameLayout.LayoutParams.WRAP_CONTENT,
-            FrameLayout.LayoutParams.WRAP_CONTENT
-        ).apply {
-            topMargin = marginTop
-            marginStart = horizontalMargin
-            marginEnd = horizontalMargin
-            gravity = if (prefs.homeAlignment == Gravity.END) Gravity.START else Gravity.END
-        }
-        binding.tvScreenTime.layoutParams = params
-        binding.tvScreenTime.setPadding(10.dpToPx())
     }
 
     private fun populateHomeScreen(appCountUpdated: Boolean) {
         if (appCountUpdated) hideHomeApps()
         populateDateTime()
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q)
-            populateScreenTime()
 
         homeAppViews().forEachIndexed { index, textView ->
             textView.isVisible = index < prefs.homeAppsNum
@@ -585,37 +584,6 @@ class HomeFragment : BaseFragment(), View.OnClickListener, View.OnLongClickListe
         requireActivity().recreate()
     }
 
-    private fun openScreenTimeDigitalWellbeing() {
-        if (prefs.screenTimeAppPackage.isNotBlank()) {
-            launchApp(
-                "Screen Time",
-                prefs.screenTimeAppPackage,
-                prefs.screenTimeAppClassName,
-                prefs.screenTimeAppUser
-            )
-            return
-        }
-        val intent = Intent()
-        try {
-            intent.setClassName(
-                Constants.DIGITAL_WELLBEING_PACKAGE_NAME,
-                Constants.DIGITAL_WELLBEING_ACTIVITY
-            )
-            requireContext().startFocusedActivity(intent)
-        } catch (e: Exception) {
-            e.printStackTrace()
-            try {
-                intent.setClassName(
-                    Constants.DIGITAL_WELLBEING_SAMSUNG_PACKAGE_NAME,
-                    Constants.DIGITAL_WELLBEING_SAMSUNG_ACTIVITY
-                )
-                requireContext().startFocusedActivity(intent)
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
-        }
-    }
-
     private fun showLongPressToast() = requireContext().showToast(getString(R.string.long_press_to_select_app))
 
     private fun textOnClick(view: View) = onClick(view)
@@ -663,10 +631,6 @@ class HomeFragment : BaseFragment(), View.OnClickListener, View.OnLongClickListe
                     lockPhone()
             }
 
-            override fun onClick() {
-                super.onClick()
-                viewModel.checkForMessages.call()
-            }
         }
     }
 
@@ -705,6 +669,7 @@ class HomeFragment : BaseFragment(), View.OnClickListener, View.OnLongClickListe
     }
 
     override fun onDestroyView() {
+        closeDailyDialog()
         super.onDestroyView()
         _binding = null
     }

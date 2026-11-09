@@ -152,10 +152,9 @@ class Prefs(context: Context) {
         get() = prefs.getBoolean(KEYBOARD_MESSAGE, false)
         set(value) = prefs.edit { putBoolean(KEYBOARD_MESSAGE, value).apply() }
 
-    /** Time-zone ID for the optional second home clock; empty when off. */
-    var secondClockZone: String
-        get() = prefs.getString("SECOND_CLOCK_ZONE", "").orEmpty()
-        set(value) = prefs.edit { putString("SECOND_CLOCK_ZONE", value) }
+    var minimalDesignApplied: Boolean
+        get() = prefs.getBoolean("MINIMAL_DESIGN", false)
+        set(value) = prefs.edit { putBoolean("MINIMAL_DESIGN", value) }
 
     var wallpaperLatitude: Double?
         get() = prefs.getString("WALLPAPER_LATITUDE", null)?.toDoubleOrNull()

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical"
+    android:paddingHorizontal="24dp" android:paddingVertical="8dp">
+    <EditText android:id="@+id/deadlineEditTitle" android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:minHeight="52dp" android:hint="@string/deadline_title" android:inputType="textCapSentences"
+        android:maxLines="2" android:imeOptions="actionDone" android:textColor="?attr/primaryColor"
+        android:textColorHint="?attr/primaryColorTrans50" />
+    <Button android:id="@+id/deadlineEditDate" style="@style/DailyButton" />
+    <Button android:id="@+id/deadlineEditTime" style="@style/DailyButton" />
+</LinearLayout>

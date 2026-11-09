@@ -18,6 +18,8 @@ class LaunchTimingTest {
     @Test fun savedCameraDispatch() {
         val instrumentation = InstrumentationRegistry.getInstrumentation()
         val context = instrumentation.targetContext
+        context.getSharedPreferences("focus", android.content.Context.MODE_PRIVATE).edit().clear().commit()
+        app.olauncher.helper.FocusSession(context).configure(setOf("com.android.camera2"), emptySet())
         val camera = Intent(MediaStore.INTENT_ACTION_STILL_IMAGE_CAMERA).resolveActivity(context.packageManager)!!
         lateinit var model: MainViewModel
         instrumentation.runOnMainSync { model = MainViewModel(context.applicationContext as Application) }

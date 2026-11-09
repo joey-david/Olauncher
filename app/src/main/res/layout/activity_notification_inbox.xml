@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" android:layout_width="match_parent" android:layout_height="match_parent" android:orientation="vertical" android:background="?attr/primaryInverseColor" android:fitsSystemWindows="true" android:paddingHorizontal="24dp" android:paddingVertical="24dp">
+    <TextView android:id="@+id/inboxClock" style="@style/DailyEyebrow" />
+    <TextView android:id="@+id/inboxHeading" style="@style/DailyHeading" android:text="@string/daily_inbox_title" />
+    <TextView android:id="@+id/inboxSummary" style="@style/DailyBody" android:layout_marginBottom="16dp" />
+    <androidx.recyclerview.widget.RecyclerView android:id="@+id/inboxList" android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1" />
+    <TextView android:id="@+id/inboxEmpty" style="@style/DailyBody" android:layout_height="0dp" android:layout_weight="1" android:gravity="center_vertical" android:text="@string/daily_inbox_empty_detail" />
+    <Button android:id="@+id/inboxContinue" style="@style/DailyButton" android:text="@string/daily_back" />
+    <Button android:id="@+id/inboxFinish" style="@style/DailyButton" android:text="@string/daily_finish" />
+</LinearLayout>

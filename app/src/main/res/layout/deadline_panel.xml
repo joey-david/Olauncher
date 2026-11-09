@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" android:id="@+id/deadlineRoot" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_gravity="bottom" android:layout_marginBottom="40dp" android:paddingHorizontal="24dp" android:orientation="horizontal" android:gravity="center_vertical">
+    <LinearLayout android:id="@+id/openDeadlines" android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:minHeight="96dp" android:orientation="vertical" android:gravity="center_vertical" android:clickable="true" android:focusable="true" android:background="?attr/selectableItemBackground" android:paddingVertical="8dp">
+        <TextView android:id="@+id/deadlineTitle" style="@style/DailyHeading" android:layout_marginTop="8dp" android:textSize="26sp" android:maxLines="2" android:ellipsize="end" android:text="@string/deadline_empty" />
+        <TextView android:id="@+id/deadlineDate" style="@style/DailyBody" android:layout_marginTop="6dp" android:textSize="14sp" />
+    </LinearLayout>
+    <Button android:id="@+id/addDeadline" style="@style/DailyButton" android:layout_width="48dp" android:layout_height="48dp" android:minWidth="48dp" android:minHeight="48dp" android:padding="0dp" android:gravity="center" android:text="+" android:textSize="28sp" android:contentDescription="@string/deadline_add" />
+</LinearLayout>

@@ -19,6 +19,10 @@
     <!--Used for Private Space support on Android 15+-->
     <uses-permission android:name="android.permission.ACCESS_HIDDEN_PROFILES" />
 
+    <uses-permission android:name="android.permission.ACCESS_NOTIFICATION_POLICY" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+
     <application
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
@@ -31,10 +35,6 @@
         android:theme="@style/AppTheme"
         tools:ignore="UnusedAttribute">
 
-        <provider android:name="rikka.shizuku.ShizukuProvider"
-            android:authorities="${applicationId}.shizuku" android:multiprocess="false"
-            android:enabled="true" android:exported="true"
-            android:permission="android.permission.INTERACT_ACROSS_USERS_FULL" />
         <activity
             android:name=".MainActivity"
             android:configChanges="uiMode"
@@ -88,6 +88,32 @@
             android:noHistory="true"
             android:taskAffinity=""
             android:theme="@android:style/Theme.Material.NoActionBar" />
+
+        <activity android:name=".ui.DeadlinesActivity" android:exported="false" android:windowSoftInputMode="stateAlwaysHidden|adjustResize" />
+        <activity android:name=".ui.DailySetupActivity" android:exported="false" />
+        <activity android:name=".ui.NotificationInboxActivity" android:exported="false" />
+
+        <service android:name=".helper.QuietNotifications"
+            android:exported="true" android:label="@string/launcher_name"
+            android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE">
+            <intent-filter><action android:name="android.service.notification.NotificationListenerService" /></intent-filter>
+        </service>
+        <service android:name=".helper.QuietConditionService"
+            android:exported="true" android:label="@string/launcher_name"
+            android:permission="android.permission.BIND_CONDITION_PROVIDER_SERVICE">
+            <intent-filter><action android:name="android.service.notification.ConditionProviderService" /></intent-filter>
+            <meta-data android:name="android.service.zen.automatic.ruleType" android:value="Daily slots" />
+        </service>
+        <receiver android:name=".helper.DailySlotReceiver" android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+                <action android:name="android.intent.action.TIME_SET" />
+                <action android:name="android.intent.action.TIMEZONE_CHANGED" />
+                <action android:name="android.intent.action.DATE_CHANGED" />
+                <action android:name="android.app.action.SCHEDULE_EXACT_ALARM_PERMISSION_STATE_CHANGED" />
+            </intent-filter>
+        </receiver>
 
         <service
             android:name=".helper.WallpaperJobService"

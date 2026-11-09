@@ -5,105 +5,141 @@ import android.os.SystemClock
 import android.provider.Settings
 import android.telecom.TelecomManager
 import android.view.inputmethod.InputMethodManager
-import androidx.core.content.edit
-import app.olauncher.R
-import kotlin.math.roundToInt
+import app.olauncher.BuildConfig
+import java.time.Instant
+import java.time.LocalDate
+import java.time.ZoneId
+import java.util.Locale
 
-/** A monotonic timer shared by the launcher and its accessibility service. */
-class FocusSession(private val context: Context) {
-    private val bootCount = Settings.Global.getInt(context.contentResolver, Settings.Global.BOOT_COUNT, 0)
+/** Shared daily budget. All writes use the same lock, including writes from the services. */
+class FocusSession(
+    private val context: Context,
+    private val now: () -> Long = System::currentTimeMillis,
+    private val elapsed: () -> Long = SystemClock::elapsedRealtime,
+    private val boot: Int = Settings.Global.getInt(context.contentResolver, Settings.Global.BOOT_COUNT, 0),
+) {
     private val prefs = context.getSharedPreferences("focus", Context.MODE_PRIVATE)
-    var minutes: Int
-        get() = prefs.getInt("minutes", 25)
-        set(value) { prefs.edit { putInt("minutes", value.coerceIn(1, MAX_MINUTES)) } }
-    /** Apps a session locks; the next session starts from the same choice. */
-    var lockedApps: Set<String>
-        get() = prefs.getStringSet("locked", emptySet())!!.toSet()
-        set(value) { prefs.edit { putStringSet("locked", value.toSet()) } }
-    var closeBlockedApps: Boolean
-        get() = prefs.getBoolean("closeBlockedApps", false)
-        set(value) { prefs.edit { putBoolean("closeBlockedApps", value) } }
-    val duration: Long get() = prefs.getLong("duration", 0)
-    val remaining: Long get() {
-        // Reboot resets elapsedRealtime. A stale session must never become an indefinite lock.
-        if (prefs.getInt("boot", -1) != bootCount) return 0
-        return (prefs.getLong("end", 0) - SystemClock.elapsedRealtime()).coerceIn(0, duration)
+    private fun date(): LocalDate = Instant.ofEpochMilli(now()).atZone(ZoneId.systemDefault()).toLocalDate()
+    val configured: Boolean get() = prefs.contains("configuredVersion")
+    val needsSetup: Boolean get() = prefs.getInt("configuredVersion", -1) != BuildConfig.VERSION_CODE
+    val allowedApps: Set<String> get() = prefs.getStringSet("allowed", emptySet())!!.toSet()
+    val notificationApps: Set<String> get() = prefs.getStringSet("notifications", emptySet())!!.toSet()
+
+    /** Choices can change only after an app version update. The budget never resets on update. */
+    fun configure(allowed: Set<String>, notifications: Set<String>): Boolean = synchronized(lock) {
+        if (!needsSetup) return false
+        prefs.edit().putStringSet("allowed", allowed.toSet())
+            .putStringSet("notifications", notifications.toSet())
+            .putInt("configuredVersion", BuildConfig.VERSION_CODE).commit()
     }
+
+    private fun refreshDay() {
+        val today = date().toString()
+        val saved = prefs.getString("day", "")!!
+        // Moving the clock or time zone backwards must not refill the budget.
+        if (today > saved) prefs.edit().putString("day", today).putInt("used", 0).commit()
+    }
+
+    val slotsLeft: Int get() = synchronized(lock) {
+        refreshDay()
+        (SLOTS - prefs.getInt("used", 0)).coerceIn(0, SLOTS)
+    }
+    val endElapsed: Long get() = if (prefs.getInt("slotBoot", -1) != boot) 0 else prefs.getLong("slotEnd", 0)
+    val remaining: Long get() = (endElapsed - elapsed()).coerceIn(0, SLOT_MS)
     val active: Boolean get() = remaining > 0
 
-    fun start() {
-        val durationMs = minutes * 60_000L
-        prefs.edit {
-            putLong("duration", durationMs)
-            putLong("end", SystemClock.elapsedRealtime() + durationMs)
-            putInt("boot", bootCount)
-        }
+    /** First unlock after 04:00, or after four hours with the screen off, starts the morning wait. */
+    fun noteUnlock() = synchronized(lock) {
+        val local = Instant.ofEpochMilli(now()).atZone(ZoneId.systemDefault())
+        val morningDay = local.toLocalDate().minusDays(if (local.hour < 4) 1 else 0).toString()
+        val wakeDay = prefs.getString("wakeDay", "")!!
+        val off = prefs.getLong("screenOff", -1)
+        val slept = if (prefs.getInt("screenOffBoot", -1) == boot && off >= 0) elapsed() - off else 0
+        if (wakeDay.isEmpty() || morningDay > wakeDay || slept >= SLEEP_MS) {
+            prefs.edit().putString("wakeDay", morningDay)
+                .putLong("wakeEnd", elapsed() + MORNING_MS).putInt("wakeBoot", boot)
+                .putInt("morningSteps", 0).remove("screenOff").commit()
+        } else if (prefs.getInt("wakeBoot", -1) != boot) {
+            // A reboot cannot skip the morning wait or extend a running slot.
+            prefs.edit().putLong("wakeEnd", elapsed() + MORNING_MS).putInt("wakeBoot", boot)
+                .remove("screenOff").commit()
+        } else prefs.edit().remove("screenOff").apply()
     }
 
-    companion object {
-        const val MAX_MINUTES = 24 * 60
-        /** How locked apps look on home and in the drawer. */
-        const val LOCKED_ALPHA = 0.3f
-
-        /** Slider position 0..1 to minutes, exponentially from 1 min to 24 h, on round steps. */
-        fun minutesAt(position: Float): Int {
-            val raw = Math.exp(position * Math.log(MAX_MINUTES.toDouble()))
-            val step = when {
-                raw < 10 -> 1
-                raw < 60 -> 5
-                raw < 180 -> 15
-                raw < 600 -> 30
-                else -> 60
-            }
-            return ((raw / step).roundToInt() * step).coerceIn(1, MAX_MINUTES)
-        }
-
-        fun positionOf(minutes: Int): Float = (Math.log(minutes.toDouble()) / Math.log(MAX_MINUTES.toDouble())).toFloat()
-
-        /** "25 min", "1 h 30 min", "24 h". */
-        fun label(minutes: Int): String = when {
-            minutes < 60 -> "$minutes min"
-            minutes % 60 == 0 -> "${minutes / 60} h"
-            else -> "${minutes / 60} h ${minutes % 60} min"
-        }
-
-        /** "18:42", or "1:05:09" past an hour. */
-        fun clock(millis: Long): String {
-            val s = (millis + 999) / 1000
-            return if (s >= 3600) String.format(java.util.Locale.ROOT, "%d:%02d:%02d", s / 3600, s / 60 % 60, s % 60)
-            else String.format(java.util.Locale.ROOT, "%02d:%02d", s / 60, s % 60)
-        }
+    fun noteScreenOff() = synchronized(lock) {
+        if (!prefs.contains("screenOff")) prefs.edit().putLong("screenOff", elapsed())
+            .putInt("screenOffBoot", boot).commit()
     }
+
+    val morningRemaining: Long get() {
+        if (prefs.getInt("wakeBoot", -1) != boot) return MORNING_MS
+        return (prefs.getLong("wakeEnd", 0) - elapsed()).coerceIn(0, MORNING_MS)
+    }
+    val morningSteps: Int get() = prefs.getInt("morningSteps", 0)
+    fun toggleMorningStep(index: Int) = synchronized(lock) {
+        require(index in 0..2)
+        prefs.edit().putInt("morningSteps", morningSteps xor (1 shl index)).commit()
+    }
+
+    /** Starts exactly one slot. A caller must also check the Android access grants. */
+    fun start(): Boolean = synchronized(lock) {
+        if (!configured || needsSetup || active || morningRemaining > 0 || slotsLeft == 0) return false
+        prefs.edit().putInt("used", prefs.getInt("used", 0) + 1)
+            .putInt("slotBoot", boot).putLong("slotEnd", elapsed() + SLOT_MS).commit()
+    }
+
+    /** Ending early spends the whole slot. */
+    fun finish() = synchronized(lock) { prefs.edit().putLong("slotEnd", 0).commit() }
 
     fun essentialApps(): Set<String> = buildSet {
         add(context.packageName)
         add("android")
         add("com.android.systemui")
-        add("com.android.settings") // Always retain a way to disable the service.
+        add("com.android.settings")
         add("com.android.phone")
         add("com.android.server.telecom")
         add("com.android.emergency")
-        add("moe.shizuku.privileged.api")
         add("com.android.permissioncontroller")
         add("com.google.android.permissioncontroller")
         (context.getSystemService(Context.TELECOM_SERVICE) as? TelecomManager)?.defaultDialerPackage?.let(::add)
-        // Force-stopping clears alarms and message delivery, so keep the clock and SMS apps.
-        android.provider.Telephony.Sms.getDefaultSmsPackage(context)?.let(::add)
+        context.packageManager.queryIntentServices(android.content.Intent(android.telecom.InCallService.SERVICE_INTERFACE), 0)
+            .filter { it.serviceInfo.permission == android.Manifest.permission.BIND_INCALL_SERVICE &&
+                it.serviceInfo.applicationInfo.flags and android.content.pm.ApplicationInfo.FLAG_SYSTEM != 0 }
+            .forEach { add(it.serviceInfo.packageName) }
         context.packageManager.queryIntentActivities(android.content.Intent(android.provider.AlarmClock.ACTION_SET_ALARM), 0)
             .forEach { add(it.activityInfo.packageName) }
-        val input = context.getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
-        input.enabledInputMethodList.forEach { add(it.packageName) }
+        (context.getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager)
+            .enabledInputMethodList.forEach { add(it.packageName) }
     }
 
-    /** Locked right now. Essentials (calls, Settings, the keyboard...) never are. */
+    /** New installs and apps installed later are blocked unless explicitly chosen. */
     fun locks(packageName: String, essentials: Set<String>): Boolean =
-        active && packageName in lockedApps && packageName !in essentials
+        packageName.isNotBlank() && !active && packageName !in allowedApps && packageName !in essentials
 
-    fun allows(packageName: String, essentials: Set<String>): Boolean = !locks(packageName, essentials)
+    val blockedMessage: String get() = when {
+        !configured -> "Choose your apps first"
+        morningRemaining > 0 -> "First slot in ${clock(morningRemaining)}"
+        slotsLeft == 0 -> "No slots left"
+        else -> "Use a slot"
+    }
 
     fun checkLaunch(packageName: String): Boolean {
         if (!locks(packageName, essentialApps())) return true
-        context.showToast(R.string.focus_app_blocked)
+        context.showToast(blockedMessage)
         return false
+    }
+
+    companion object {
+        const val SLOTS = 3
+        const val SLOT_MS = 10 * 60_000L
+        const val MORNING_MS = 30 * 60_000L
+        const val SLEEP_MS = 4 * 60 * 60_000L
+        const val LOCKED_ALPHA = 0.35f
+        private val lock = Any()
+
+        fun clock(millis: Long): String {
+            val seconds = (millis.coerceAtLeast(0) + 999) / 1000
+            return String.format(Locale.ROOT, "%02d:%02d", seconds / 60, seconds % 60)
+        }
     }
 }

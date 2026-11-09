@@ -117,6 +117,7 @@ class PauseActivity : Activity() {
     }
 
     private fun launch(packageName: String, activityClassName: String?, shortcutId: String?, user: UserHandle) {
+        if (!FocusSession(this).checkLaunch(packageName)) return
         val launcher = getSystemService(LauncherApps::class.java)
         runCatching {
             if (shortcutId != null) {

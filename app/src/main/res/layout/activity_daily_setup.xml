@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android" android:layout_width="match_parent" android:layout_height="match_parent" android:background="?attr/primaryInverseColor" android:fillViewport="true" android:fitsSystemWindows="true">
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:paddingHorizontal="24dp" android:paddingVertical="32dp">
+        <TextView android:id="@+id/setupTitle" style="@style/DailyHeading" android:text="@string/daily_setup_title" />
+        <TextView android:id="@+id/setupIntro" style="@style/DailyBody" android:text="@string/daily_setup_intro" />
+        <Button android:id="@+id/chooseEssentials" style="@style/DailyButton" android:text="@string/daily_choose_apps" />
+        <Button android:id="@+id/chooseNotifications" style="@style/DailyButton" android:text="@string/daily_choose_notifications" />
+        <TextView android:id="@+id/chosenSummary" style="@style/DailyBody" />
+        <TextView style="@style/DailyEyebrow" android:layout_marginTop="24dp" android:text="@string/daily_access_title" />
+        <Button android:id="@+id/accessHome" style="@style/DailyButton" />
+        <Button android:id="@+id/accessGuard" style="@style/DailyButton" />
+        <Button android:id="@+id/accessInbox" style="@style/DailyButton" />
+        <Button android:id="@+id/accessQuiet" style="@style/DailyButton" />
+        <Button android:id="@+id/accessAlerts" style="@style/DailyButton" />
+        <Button android:id="@+id/accessTimer" style="@style/DailyButton" />
+        <TextView android:id="@+id/setupWarning" style="@style/DailyBody" />
+        <Button android:id="@+id/rulesDetails" style="@style/DailyButton" android:text="Details" />
+        <Button android:id="@+id/lockChoices" style="@style/DailyButton" android:text="@string/daily_lock_choices" />
+        <Button android:id="@+id/setupBack" style="@style/DailyButton" android:text="@string/daily_back" />
+    </LinearLayout>
+</ScrollView>

@@ -75,8 +75,8 @@
         <item name="android:textColorHint">?attr/primaryColorTrans80</item>
         <item name="android:shadowColor">?attr/primaryTextShadowColor</item>
         <item name="android:shadowDx">0</item>
-        <item name="android:shadowDy">2</item>
-        <item name="android:shadowRadius">4</item>
+        <item name="android:shadowDy">0</item>
+        <item name="android:shadowRadius">0</item>
     </style>
 
     <style name="TextLarge" parent="TextDefault">
@@ -118,6 +118,9 @@
 
     <!-- Alert dialogs: the window only; content comes from layout/dialog_base.xml -->
     <style name="OlAlertDialog" parent="ThemeOverlay.AppCompat.Dialog.Alert">
+        <item name="buttonBarPositiveButtonStyle">@style/PlainDialogButton</item>
+        <item name="buttonBarNegativeButtonStyle">@style/PlainDialogButton</item>
+        <item name="buttonBarNeutralButtonStyle">@style/PlainDialogButton</item>
         <item name="android:windowBackground">@drawable/bg_dialog</item>
         <item name="android:backgroundDimAmount">0.5</item>
         <item name="android:windowAnimationStyle">@style/OlDialogAnimation</item>

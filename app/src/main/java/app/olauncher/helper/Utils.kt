@@ -517,9 +517,7 @@ fun Context.deletePinnedShortcut(packageName: String, shortcutIdToDelete: String
 
 fun Context.startFocusedActivity(intent: Intent) {
     val session = FocusSession(this)
-    if (session.active) {
-        val pkg = intent.resolveActivity(packageManager)?.packageName ?: return
-        if (!session.checkLaunch(pkg)) return
-    }
+    val pkg = intent.resolveActivity(packageManager)?.packageName ?: return
+    if (!session.checkLaunch(pkg)) return
     startActivity(intent)
 }

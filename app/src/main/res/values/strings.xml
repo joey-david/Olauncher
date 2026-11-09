@@ -173,25 +173,6 @@
     <string name="invalid_shortcut">Invalid shortcut</string>
     <string name="shortcut_not_found">Shortcut not found</string>
     <string name="unable_to_open_shortcut">Unable to open shortcut</string>
-    <string translatable="false" name="focus_start">Start focus</string>
-    <string translatable="false" name="focus_apps">Locked apps</string>
-    <string translatable="false" name="focus_duration">Focus length</string>
-    <string translatable="false" name="focus_min_label">1 min</string>
-    <string translatable="false" name="focus_max_label">24 h</string>
-    <string translatable="false" name="focus_focusing">Focusing</string>
-    <string translatable="false" name="focus_guard_short">App guard</string>
-    <string translatable="false" name="focus_on">On</string>
-    <string translatable="false" name="focus_off">Off</string>
-    <string translatable="false" name="focus_apps_none">None</string>
-    <string translatable="false" name="focus_close_apps_hint">Needs Shizuku</string>
-    <string translatable="false" name="focus_go">Start</string>
-    <string translatable="false" name="focus_locked_until">Locked until %1$s</string>
-    <string translatable="false" name="focus_app_blocked">Locked until your focus ends.</string>
-    <string translatable="false" name="focus_guard">Block apps opened from notifications and Recents</string>
-    <string translatable="false" name="focus_guard_detail">Enable Focus Launcher in Accessibility settings. The service checks the foreground app name and returns you home when a blocked app opens. Phone calls, the keyboard and system settings stay available. It does not close app processes. You can turn it off at any time.</string>
-    <string translatable="false" name="focus_guard_on">App guard on</string>
-    <string translatable="false" name="focus_guard_off">App guard off</string>
-    <string translatable="false" name="focus_save">Save</string>
     <string translatable="false" name="wallpaper_studio">Wallpapers</string>
     <string translatable="false" name="wallpaper_dunes">Dunes</string>
     <string translatable="false" name="wallpaper_ridges">Ridges</string>
@@ -213,28 +194,47 @@
     <string translatable="false" name="wallpaper_polar">Polar day / night</string>
     <string translatable="false" name="wallpaper_earth">Earth · daily satellite view</string>
     <string translatable="false" name="wallpaper_earth_detail">Earth mode downloads a small NASA Blue Marble mosaic crop, then keeps it for day and night. A new date picks a new location. This is historical satellite imagery. Offline, you get a generated landscape until the download succeeds. Imagery: NASA / GSFC / Reto Stöckli.</string>
-    <string translatable="false" name="focus_service_description">Locks the screen on double tap. During a focus timer, checks foreground app names and returns home when a blocked app opens. Phone calls, the keyboard and Settings remain available.</string>
-    <string translatable="false" name="focus_close_apps">Close locked apps on start</string>
-    <string translatable="false" name="focus_close_apps_detail">Android needs Shizuku access to force-stop other apps. Set up and start Shizuku, then authorize Focus Launcher. This closes the locked apps; it can interrupt their downloads and delay their notifications until you open them again. Phone, SMS, clock/alarms, the keyboard and Settings are never closed. This option is off by default.</string>
-    <string translatable="false" name="focus_shizuku_authorize">Set up / authorize Shizuku</string>
-    <string translatable="false" name="focus_close_failed">Could not close apps. Start Shizuku and grant access.</string>
-    <string translatable="false" name="focus_closed">Closed %1$d locked apps</string>
-    <string translatable="false" name="second_clock">Second clock</string>
-    <string translatable="false" name="second_clock_search">Search city</string>
-    <string name="pause_menu">Pause</string>
-    <string name="pause_menu_off">Unpause</string>
-    <string name="pause_enabled">%1$s will ask you to breathe first</string>
-    <string name="pause_disabled">%1$s opens instantly again</string>
-    <string name="pause_breathe_in">Breathe in…</string>
-    <string name="pause_breathe_out">…and out</string>
-    <string name="pause_open_in">Open in %1$d</string>
-    <string name="pause_open">Open</string>
-    <string name="pause_not_now">Not now</string>
-    <string name="pause_usage_minutes">%1$d min today</string>
-    <string name="pause_usage_hours">%1$dh %2$02dm today</string>
-    <plurals name="pause_attempts">
+    <string translatable="false" name="focus_service_description">Blocks apps outside three daily slots and shows a ten-second black screen after unlock. Calls and incoming texts skip that wait. Tracks screen off and unlock times for the morning wait. Chosen apps, calls, alarms, the keyboard and Settings stay available.</string>
+    <string name="pause_menu" translatable="false">Pause</string>
+    <string name="pause_menu_off" translatable="false">Unpause</string>
+    <string name="pause_enabled" translatable="false">%1$s will ask you to breathe first</string>
+    <string name="pause_disabled" translatable="false">%1$s opens instantly again</string>
+    <string name="pause_breathe_in" translatable="false">Breathe in…</string>
+    <string name="pause_breathe_out" translatable="false">…and out</string>
+    <string name="pause_open_in" translatable="false">Open in %1$d</string>
+    <string name="pause_open" translatable="false">Open</string>
+    <string name="pause_not_now" translatable="false">Not now</string>
+    <string name="pause_usage_minutes" translatable="false">%1$d min today</string>
+    <string name="pause_usage_hours" translatable="false">%1$dh %2$02dm today</string>
+    <plurals name="pause_attempts" translatable="false">
         <item quantity="one">First time opening %2$s today</item>
         <item quantity="other">%1$d times opening %2$s today</item>
     </plurals>
-    <string name="copied_result">Copied %1$s</string>
+    <string name="copied_result" translatable="false">Copied %1$s</string>
+    <string translatable="false" name="daily_save">Save</string>
+    <string translatable="false" name="daily_name">Slots</string>
+    <string translatable="false" name="daily_setup_title">Rules</string>
+    <string translatable="false" name="daily_setup_intro">3 × 10 min / day</string>
+    <string translatable="false" name="daily_choose_apps">1   Choose always available apps</string>
+    <string translatable="false" name="daily_choose_notifications">2   Choose apps that may notify you</string>
+    <string translatable="false" name="daily_access_title">Access</string>
+    <string translatable="false" name="daily_lock_choices">Lock these choices</string>
+    <string translatable="false" name="daily_back">Home</string>
+    <string translatable="false" name="daily_wake_detail">The first unlock after 04:00 starts a 30-minute morning wait. So does unlocking after at least four hours with the screen off. This estimates wake time; the phone cannot know when you wake. Essentials and calls stay available. A reboot starts a fresh wait. Ticking a morning task does not shorten it.</string>
+    <string translatable="false" name="daily_quiet_detail">Quiet time uses a separate Do Not Disturb rule. Calls and alarms may ring. Chosen app alerts come through the launcher with their open and reply actions. Other notifications stay hidden until a slot starts. Turn off other apps’ “Override Do Not Disturb” channels, which Android can still let through. Other DND modes may also silence chosen alerts.</string>
+    <string translatable="false" name="daily_configure">Choose apps</string>
+    <string translatable="false" name="daily_morning_title">First, take care of yourself.</string>
+    <string translatable="false" name="daily_finish">End slot</string>
+    <string translatable="false" name="daily_repair">Setup</string>
+    <string translatable="false" name="daily_inbox_title">Inbox</string>
+    <string translatable="false" name="daily_inbox_empty_detail">Nothing needs your attention here. You can finish this slot early.</string>
+    <string translatable="false" name="daily_done">Done</string>
+    <string translatable="false" name="daily_rules_open">View</string>
+    <string translatable="false" name="deadline_name">Deadlines</string>
+    <string translatable="false" name="deadline_empty">No deadlines</string>
+    <string translatable="false" name="deadline_add">Add</string>
+    <string translatable="false" name="deadline_edit">Edit</string>
+    <string translatable="false" name="deadline_title">Title</string>
+    <string translatable="false" name="deadline_search">Search</string>
+    <string translatable="false" name="unlock_pause_detail">Each unlock starts a blank 10-second pause. Calls and incoming texts skip it; a call or text arriving during the wait ends it. A text does not change your app or notification choices.</string>
 </resources>

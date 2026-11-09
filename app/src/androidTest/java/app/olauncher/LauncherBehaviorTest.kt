@@ -18,22 +18,25 @@ class LauncherBehaviorTest {
     private val instrumentation = InstrumentationRegistry.getInstrumentation()
     private val context = instrumentation.targetContext
     private val device = UiDevice.getInstance(instrumentation.apply {
+        Configurator.getInstance().waitForIdleTimeout = 400
         Configurator.getInstance().uiAutomationFlags = android.app.UiAutomation.FLAG_DONT_SUPPRESS_ACCESSIBILITY_SERVICES
     })
     private val focus get() = FocusSession(context)
 
     @Before fun setup() {
-        context.getSharedPreferences("focus", Context.MODE_PRIVATE).edit().putLong("end", 0).commit()
+        context.getSharedPreferences("mindful_pause", Context.MODE_PRIVATE).edit().clear().commit()
+        context.getSharedPreferences("focus", Context.MODE_PRIVATE).edit().clear().commit()
+        focus.configure(setOf("com.android.camera2"), emptySet())
         Prefs(context).apply {
             firstOpen = false; firstSettingsOpen = false
             dailyWallpaper = false; hideSetDefaultLauncher = true; homeAppsNum = 4
         }
     }
-    @After fun cleanup() { context.getSharedPreferences("focus", Context.MODE_PRIVATE).edit().putLong("end", 0).commit() }
+    @After fun cleanup() { context.getSharedPreferences("focus", Context.MODE_PRIVATE).edit().clear().commit() }
 
     private fun home() {
         context.startActivity(Intent(context, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
-        assertTrue(device.wait(Until.hasObject(By.res(context.packageName, "focusToggle")), 5000))
+        assertTrue(device.wait(Until.hasObject(By.res(context.packageName, "slotAction")), 5000))
         device.waitForIdle()
     }
 
@@ -65,60 +68,6 @@ class LauncherBehaviorTest {
         assertNotEquals("missing.Component", Prefs(context).appActivityClassName1)
     }
 
-    @Test fun focusBlocksBothSavedAndImplicitCameraAndRestoresAccess() {
-        val camera = Intent(MediaStore.INTENT_ACTION_STILL_IMAGE_CAMERA).resolveActivity(context.packageManager)!!
-        val prefs = Prefs(context)
-        prefs.appPackageSwipeLeft = "" // implicit camera path
-        focus.apply { minutes = 1; lockedApps = setOf(camera.packageName); start() }
-        home()
-        device.swipe(950, 1400, 100, 1400, 12)
-        device.waitForIdle()
-        assertEquals(context.packageName, device.currentPackageName)
-        prefs.apply { appPackageSwipeLeft = camera.packageName; appActivityClassNameSwipeLeft = camera.className }
-        device.swipe(950, 1400, 100, 1400, 12)
-        device.waitForIdle()
-        assertEquals(context.packageName, device.currentPackageName)
-        context.getSharedPreferences("focus", Context.MODE_PRIVATE).edit().putLong("end", 0).commit()
-        device.swipe(950, 1400, 100, 1400, 12)
-        assertTrue(device.wait(Until.hasObject(By.pkg(camera.packageName)), 5000))
-    }
-
-    @Test fun countdownExpiresAndSurvivesActivityRecreation() {
-        focus.apply { minutes = 1; lockedApps = emptySet(); start() }
-        val remaining = focus.remaining
-        home()
-        device.pressHome(); home()
-        assertTrue(FocusSession(context).remaining in 1..remaining)
-        context.getSharedPreferences("focus", Context.MODE_PRIVATE).edit()
-            .putLong("end", SystemClock.elapsedRealtime() - 1).commit()
-        assertFalse(focus.active)
-        assertTrue(focus.checkLaunch("com.android.camera2"))
-    }
-
-    @Test fun accessibilityBlocksExternalLaunchAndHonorsAllowlist() {
-        org.junit.Assume.assumeTrue(android.os.Build.MODEL.contains("sdk_gphone"))
-        val component = android.content.ComponentName(context, MyAccessibilityService::class.java).flattenToString()
-        val old = android.provider.Settings.Secure.getString(context.contentResolver, "enabled_accessibility_services")
-        try {
-            device.executeShellCommand("cmd package set-home-activity ${context.packageName}/app.olauncher.MainActivity")
-            device.executeShellCommand("settings put secure enabled_accessibility_services $component")
-            device.executeShellCommand("settings put secure accessibility_enabled 1")
-            SystemClock.sleep(1000)
-            val camera = Intent(MediaStore.INTENT_ACTION_STILL_IMAGE_CAMERA).resolveActivity(context.packageManager)!!
-            focus.apply { minutes = 1; lockedApps = setOf(camera.packageName); start() }
-            home()
-            device.executeShellCommand("am start -W -n ${camera.flattenToString()}")
-            assertTrue("External launches must return home", device.wait(Until.hasObject(By.res(context.packageName, "focusToggle")), 5000))
-            focus.lockedApps = emptySet()
-            device.executeShellCommand("am start -W -n ${camera.flattenToString()}")
-            assertTrue("Allowed camera stays open", device.wait(Until.hasObject(By.pkg(camera.packageName)), 5000))
-        } finally {
-            context.getSharedPreferences("focus", Context.MODE_PRIVATE).edit().putLong("end", 0).commit()
-            if (old.isNullOrEmpty()) device.executeShellCommand("settings delete secure enabled_accessibility_services")
-            else device.executeShellCommand("settings put secure enabled_accessibility_services $old")
-        }
-    }
-
     @Test fun dailyImagesAreStableDistinctAndHaveNightVariant() {
         val wallpaper = GeneratedWallpaper(context)
         val now = 1_792_440_000_000L
@@ -133,12 +82,11 @@ class LauncherBehaviorTest {
         assertTrue(places.zipWithNext().all { (a, b) -> a.name != b.name })
     }
 
-    @Test fun secondClockShowsChosenCity() {
-        Prefs(context).secondClockZone = "Asia/Tokyo"
-        try {
-            home()
-            val clock = device.wait(Until.findObject(By.res(context.packageName, "clock2")), 5000)
-            assertTrue(clock.text, clock.text.startsWith("Tokyo "))
-        } finally { Prefs(context).secondClockZone = "" }
+    @Test fun singleClockAndDailySlotsReplaceOldWidgets() {
+        home()
+        assertTrue(device.hasObject(By.res(context.packageName, "clock")))
+        assertTrue(device.hasObject(By.res(context.packageName, "morningPrompt")))
+        assertFalse(device.hasObject(By.res(context.packageName, "clock2")))
+        assertFalse(device.hasObject(By.res(context.packageName, "focusToggle")))
     }
 }
