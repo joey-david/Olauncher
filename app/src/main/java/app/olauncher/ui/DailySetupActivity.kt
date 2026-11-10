@@ -44,9 +44,22 @@ class DailySetupActivity : AppCompatActivity() {
         focus = FocusSession(this)
         allowed = savedInstanceState?.getStringArrayList("allowed")?.toSet() ?: focus.allowedApps
         notifications = savedInstanceState?.getStringArrayList("notifications")?.toSet() ?: focus.notificationApps
-        choseAllowed = savedInstanceState?.getBoolean("choseAllowed") ?: (focus.configured || focus.allowedApps.isNotEmpty() || focus.notificationApps.isNotEmpty())
-        choseNotifications = savedInstanceState?.getBoolean("choseNotifications") ?: (focus.configured || focus.allowedApps.isNotEmpty() || focus.notificationApps.isNotEmpty())
+        choseAllowed = savedInstanceState?.getBoolean("choseAllowed") ?: (focus.configured || focus.hasSavedChoices)
+        choseNotifications = savedInstanceState?.getBoolean("choseNotifications") ?: (focus.configured || focus.hasSavedChoices)
         binding.chooseEssentials.setOnClickListener { choose(false) }
+        val morning = Button(this).apply {
+            text = "Allowed during the first 30 minutes"
+            isEnabled = focus.needsSetup
+            setOnClickListener {
+                val choices = apps.filter { it.appPackage !in focus.essentialApps() }
+                val selected = focus.morningApps.toMutableSet()
+                AlertDialog.Builder(this@DailySetupActivity).setTitle("Morning allowed apps")
+                    .setMultiChoiceItems(choices.map { it.appLabel }.toTypedArray(), choices.map { it.appPackage in selected }.toBooleanArray()) { _, i, checked ->
+                        if (checked) selected.add(choices[i].appPackage) else selected.remove(choices[i].appPackage)
+                    }.setPositiveButton("Save") { _, _ -> focus.morningApps = selected }.setNegativeButton("Cancel", null).show()
+            }
+        }
+        (binding.chooseEssentials.parent as android.widget.LinearLayout).addView(morning, 4)
         binding.chooseNotifications.setOnClickListener { choose(true) }
         binding.accessHome.setOnClickListener { startActivity(Intent(Settings.ACTION_HOME_SETTINGS)) }
         binding.accessGuard.setOnClickListener {
@@ -71,10 +84,10 @@ class DailySetupActivity : AppCompatActivity() {
         }
         binding.lockChoices.setOnClickListener {
             val labels = { selected: Set<String> -> apps.filter { it.appPackage in selected }.joinToString { it.appLabel }.ifBlank { "None" } }
-            AlertDialog.Builder(this).setTitle("Lock choices?")
-                .setMessage("Until the next update.\n\nApps: ${labels(allowed)}\nAlerts: ${labels(notifications)}")
+            AlertDialog.Builder(this).setTitle("Keep these allowed apps?")
+                .setMessage("Selected apps stay available outside slots. All others require a slot. Changes lock until the next update.\n\nApps: ${labels(allowed)}\nAlerts: ${labels(notifications)}")
                 .setNegativeButton(android.R.string.cancel, null)
-                .setPositiveButton("Lock choices") { _, _ ->
+                .setPositiveButton("Finish setup") { _, _ ->
                     if (focus.configure(allowed, notifications)) {
                         val home = apps.filter { it.appPackage in allowed }.take(8)
                         Prefs(this).homeAppsNum = home.size
@@ -126,7 +139,7 @@ class DailySetupActivity : AppCompatActivity() {
         if (!focus.needsSetup) return
         val choices = if (alerts) apps else apps.filter { it.appPackage !in focus.essentialApps() }
         val selected = (if (alerts) notifications else allowed).toMutableSet()
-        AlertDialog.Builder(this).setTitle(if (alerts) "Alerts" else "Apps")
+        AlertDialog.Builder(this).setTitle(if (alerts) "Apps allowed to notify" else "Allowed outside slots")
             .setMultiChoiceItems(choices.map { it.appLabel }.toTypedArray(), choices.map { it.appPackage in selected }.toBooleanArray()) { _, index, checked ->
                 if (checked) selected.add(choices[index].appPackage) else selected.remove(choices[index].appPackage)
             }.setNegativeButton(android.R.string.cancel, null).setPositiveButton("Save") { _, _ ->
@@ -144,13 +157,13 @@ class DailySetupActivity : AppCompatActivity() {
         }
         val editable = focus.needsSetup
         binding.setupTitle.text = "Rules"
-        binding.setupIntro.text = "3 × 10 min / day"
+        binding.setupIntro.text = "Checked apps stay accessible. All others require a slot. Morning uses its own list. Phone, alarms and Settings always work."
         binding.chooseEssentials.isEnabled = editable && apps.isNotEmpty()
         binding.chooseNotifications.isEnabled = editable && apps.isNotEmpty()
-        binding.chooseEssentials.text = "Apps  ·  ${allowed.size}"
+        binding.chooseEssentials.text = "Allowed outside slots  ·  ${allowed.size}"
         binding.chooseNotifications.text = "Alerts  ·  ${notifications.size}"
         val labels = { selected: Set<String> -> apps.filter { it.appPackage in selected }.joinToString { it.appLabel }.ifBlank { "None" } }
-        binding.chosenSummary.text = "Apps: ${labels(allowed)}\nAlerts: ${labels(notifications)}\nRestricted settings? Tap for App info."
+        binding.chosenSummary.text = "Outside slots: ${labels(allowed)}\nAlerts: ${labels(notifications)}\nRestricted settings? Tap for App info."
         access(binding.accessHome, "Launcher", isOlauncherDefault(this))
         access(binding.accessGuard, "App guard", MyAccessibilityService.isConnected)
         access(binding.accessInbox, "Inbox", QuietNotifications.isConnected)

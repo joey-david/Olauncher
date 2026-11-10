@@ -4,12 +4,14 @@ A black-and-white Android launcher with three 10-minute slots a day.
 
 [Download the signed APK](https://github.com/joey-david/Olauncher/releases/latest) · Android 10+
 
-- Choose the apps and alerts you allow once per launcher version. Chosen apps become your home apps. Other apps open only during a slot.
+- Choose the apps and alerts you allow once per launcher version. Checked apps are allowed outside slots and become your home apps. A separate morning allowlist applies during the first 30 minutes. Saved choices take effect immediately. Other apps open only during a slot.
 - Slots run continuously, including while the phone is locked. No pause, extension, refund, or rollover. The count resets at local midnight.
 - The first morning unlock starts a 30-minute wait. Home suggests going outside, drinking water, or having breakfast. This uses the first unlock after 04:00, or an unlock after four hours with the screen off, as an estimate of waking. A reboot starts a fresh wait.
-- Every unlock shows ten seconds of black. Calls and recent incoming texts skip that wait; texts do not change the app or alert rules. A call or text arriving during the wait ends it.
+- Every unlock shows ten seconds of daily unlocked time, per-app use, and a countdown to the next deadline. Usage tracking starts with this update. Calls and recent incoming texts skip that wait; texts do not change the app or alert rules. A call or text arriving during the wait ends it.
 - Quiet notifications appear in a local inbox when you start a slot. Chosen alerts keep their open/reply actions. Calls, alarms, the keyboard, and Android Settings stay available.
 - Home shows the next deadline. A deadline has only a date, time, and title. Tap to search, sort by date/name, edit, or remove it.
+
+Outside slots, a reminder appears every two minutes of continuous unlocked use.
 
 ## Setup
 

@@ -11,6 +11,10 @@ import android.provider.Settings
 import android.view.Gravity
 import android.view.View
 import android.view.WindowManager
+import android.widget.LinearLayout
+import android.widget.TextView
+import android.widget.ScrollView
+import app.olauncher.data.DeadlineStore
 
 /** Covers every app after an unlock. Only a live call or a recent incoming text may cut it short. */
 class UnlockPause(private val service: AccessibilityService) {
@@ -21,6 +25,17 @@ class UnlockPause(private val service: AccessibilityService) {
     private var black: View? = null
     val isVisible: Boolean get() = black != null
     private val finish = Runnable { hide() }
+    private var countdown: TextView? = null
+    private val update = object : Runnable {
+        override fun run() {
+            val deadline = DeadlineStore(service).next()
+            countdown?.text = if (deadline == null) "No deadline" else {
+                val seconds = ((deadline.at - System.currentTimeMillis()).coerceAtLeast(0) / 1000)
+                "${deadline.title}\n${seconds / 86400}d  ${seconds / 3600 % 24}h  ${seconds / 60 % 60}m  ${seconds % 60}s"
+            }
+            handler.postDelayed(this, 1000)
+        }
+    }
 
     fun screenOff() {
         hide()
@@ -40,12 +55,25 @@ class UnlockPause(private val service: AccessibilityService) {
             .putLong("unlockEnd", now + WAIT_MS).commit()
         val remaining = prefs.getLong("unlockEnd", 0) - now
         if (remaining <= 0 || isVisible) return
-        val view = View(service).apply {
+        fun label(value: String, size: Float) = TextView(service).apply {
+            text = value; textSize = size; setTextColor(Color.WHITE)
+            setPadding(40, 24, 40, 24)
+        }
+        val panel = LinearLayout(service).apply {
+            orientation = LinearLayout.VERTICAL
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(24, 80, 24, 80)
+            addView(label(DailyPhoneUsage(service).summary(), 18f))
+            countdown = label("", 26f)
+            addView(countdown)
+        }
+        val view = ScrollView(service).apply {
+            addView(panel)
+            isFillViewport = true
             setBackgroundColor(Color.BLACK)
             contentDescription = "Unlock pause"
             isClickable = true
             isFocusableInTouchMode = true
-            setOnTouchListener { _, _ -> true }
             setOnKeyListener { _, _, _ -> true }
         }
         val params = WindowManager.LayoutParams(WindowManager.LayoutParams.MATCH_PARENT, WindowManager.LayoutParams.MATCH_PARENT,
@@ -62,6 +90,7 @@ class UnlockPause(private val service: AccessibilityService) {
         view.requestFocus()
         // After the wait, the nearest deadline is the first thing on screen.
         if (newUnlock) service.performGlobalAction(AccessibilityService.GLOBAL_ACTION_HOME)
+        handler.post(update)
         handler.postDelayed(finish, remaining)
     }
 
@@ -74,6 +103,8 @@ class UnlockPause(private val service: AccessibilityService) {
     fun close() = hide()
     private fun hide() {
         handler.removeCallbacks(finish)
+        handler.removeCallbacks(update)
+        countdown = null
         black?.let { windows.removeView(it) }
         black = null
     }

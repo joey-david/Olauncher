@@ -123,12 +123,12 @@ class HomeFragment : BaseFragment(), View.OnClickListener, View.OnLongClickListe
         val left = focus.slotsLeft
         val ready = dailyProtectionReady(requireContext())
         binding.slotAction.text = when {
-            focus.needsSetup -> getString(R.string.daily_configure)
+            focus.needsSetup -> if (focus.configured) "Setup" else getString(R.string.daily_configure)
             remaining > 0 -> "${FocusSession.clock(remaining)}  ·  Inbox"
             !ready -> getString(R.string.daily_repair)
             left == 0 -> "No slots left"
-            morning > 0 -> "Slots  ·  ${FocusSession.clock(morning)}"
-            else -> "$left × 10 min"
+            morning > 0 -> "Morning routine"
+            else -> "Use a 10-minute slot  ·  $left left"
         }
         binding.slotAction.isEnabled = focus.needsSetup || remaining > 0 || !ready || left > 0
         binding.protectionStatus.isVisible = !ready || QuietNotifications.bypassWarnings().isNotEmpty()
@@ -137,8 +137,8 @@ class HomeFragment : BaseFragment(), View.OnClickListener, View.OnLongClickListe
         binding.deadlinePanel.deadlineTitle.text = deadline?.title ?: "Deadlines"
         binding.deadlinePanel.deadlineDate.isVisible = deadline != null
         binding.deadlinePanel.deadlineDate.text = deadline?.let { deadlineDate(requireContext(), it.at) }
-        binding.morningPrompt.isVisible = morning > 0 && focus.configured && remaining == 0L
-        binding.morningPrompt.text = listOf("Go outside", "Drink water", "Have breakfast")[((FocusSession.MORNING_MS - morning) / 600_000).toInt().coerceIn(0, 2)]
+        binding.morningPrompt.isVisible = morning > 0 && (focus.configured || focus.hasSavedChoices) && remaining == 0L && left > 0
+        binding.morningPrompt.text = "First slot in ${FocusSession.clock(morning)}"
         dimLockedApps()
     }
 
@@ -152,8 +152,9 @@ class HomeFragment : BaseFragment(), View.OnClickListener, View.OnLongClickListe
             !dailyProtectionReady(requireContext()) -> startActivity(Intent(requireContext(), DailySetupActivity::class.java))
             focus.slotsLeft == 0 -> Unit
             focus.morningRemaining > 0 -> showMorning()
-            else -> dailyDialog = AlertDialog.Builder(requireContext()).setTitle("Start 10 minutes?")
-                .setNegativeButton("Cancel", null).setPositiveButton("Start") { _, _ ->
+            else -> dailyDialog = AlertDialog.Builder(requireContext()).setTitle("Use slot ${FocusSession.SLOTS - focus.slotsLeft + 1} of ${FocusSession.SLOTS}?")
+                .setMessage("10 minutes start now. The timer keeps running when you switch apps or lock the phone. Ending early does not return the slot.")
+                .setNegativeButton("Not now", null).setPositiveButton("Start 10-minute slot") { _, _ ->
                     QuietNotifications.captureForSlot()
                     if (dailyProtectionReady(requireContext()) && focus.start()) {
                         QuietMode.sync(requireContext())

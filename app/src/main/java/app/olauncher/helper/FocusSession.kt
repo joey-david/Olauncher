@@ -20,9 +20,13 @@ class FocusSession(
 ) {
     private val prefs = context.getSharedPreferences("focus", Context.MODE_PRIVATE)
     private fun date(): LocalDate = Instant.ofEpochMilli(now()).atZone(ZoneId.systemDefault()).toLocalDate()
+    val hasSavedChoices: Boolean get() = prefs.contains("allowed")
     val configured: Boolean get() = prefs.contains("configuredVersion")
     val needsSetup: Boolean get() = prefs.getInt("configuredVersion", -1) != BuildConfig.VERSION_CODE
     val allowedApps: Set<String> get() = prefs.getStringSet("allowed", emptySet())!!.toSet()
+    var morningApps: Set<String>
+        get() = prefs.getStringSet("morningApps", emptySet())!!.toSet()
+        set(value) { prefs.edit().putStringSet("morningApps", value.toSet()).commit() }
     val notificationApps: Set<String> get() = prefs.getStringSet("notifications", emptySet())!!.toSet()
 
     fun saveChoices(allowed: Set<String>, notifications: Set<String>) = synchronized(lock) {
@@ -119,7 +123,8 @@ class FocusSession(
 
     /** New installs and apps installed later are blocked unless explicitly chosen. */
     fun locks(packageName: String, essentials: Set<String>): Boolean =
-        !needsSetup && packageName.isNotBlank() && !active && packageName !in allowedApps && packageName !in essentials
+        (configured || prefs.contains("allowed")) && packageName.isNotBlank() && !active &&
+            packageName !in (if (morningRemaining > 0) morningApps else allowedApps) && packageName !in essentials
 
     val blockedMessage: String get() = when {
         !configured -> "Choose your apps first"

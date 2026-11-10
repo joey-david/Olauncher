@@ -197,7 +197,8 @@ class DailyFlowTest {
         assertEquals("Updating choices must not refill the budget", 1, focus.slotsLeft)
         assertFalse(focus.configure(emptySet(), emptySet()))
     }
-    @Test fun unlockStaysBlackForTenSecondsEvenWithHomeAndBack() {
+    @Test fun unlockShowsUsageAndDeadlineForTenSecondsEvenWithHomeAndBack() {
+        app.olauncher.data.DeadlineStore(context).save("Next deadline", System.currentTimeMillis() + 90_000_000)
         home()
         device.sleep()
         device.wakeUp()
@@ -208,12 +209,9 @@ class DailyFlowTest {
         device.pressBack()
         val screenshot = java.io.File(context.getExternalFilesDir("checks"), "unlock-black.png")
         assertTrue(device.takeScreenshot(screenshot))
-        val bitmap = android.graphics.BitmapFactory.decodeFile(screenshot.path)
-        for (x in listOf(bitmap.width / 4, bitmap.width / 2, bitmap.width * 3 / 4)) {
-            for (y in listOf(bitmap.height / 8, bitmap.height / 2, bitmap.height * 7 / 8))
-                assertEquals("The pause must show only black", android.graphics.Color.BLACK, bitmap.getPixel(x, y))
-        }
-        bitmap.recycle()
+        device.executeShellCommand("cp ${screenshot.path} /sdcard/Download/focus-usage-check.png")
+        assertTrue(device.hasObject(By.textContains("Unlocked")))
+        assertTrue(device.hasObject(By.textContains("Next deadline")))
         val beforeEnd = end - SystemClock.elapsedRealtime() - 1000
         if (beforeEnd > 0) SystemClock.sleep(beforeEnd)
         assertTrue("It must not finish early", device.hasObject(By.desc("Unlock pause")))

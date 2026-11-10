@@ -7,6 +7,7 @@
     <cloud-backup>
         <exclude domain="sharedpref" path="focus.xml" />
         <exclude domain="sharedpref" path="notification_inbox.xml" />
+        <exclude domain="sharedpref" path="phone_usage.xml" />
         <!-- TODO: Use <include> and <exclude> to control what is backed up.
         <include .../>
         <exclude .../>
@@ -15,5 +16,6 @@
     <device-transfer>
         <exclude domain="sharedpref" path="focus.xml" />
         <exclude domain="sharedpref" path="notification_inbox.xml" />
+        <exclude domain="sharedpref" path="phone_usage.xml" />
     </device-transfer>
 </data-extraction-rules>

@@ -19,6 +19,7 @@ import app.olauncher.R
 import app.olauncher.data.Prefs
 
 class MyAccessibilityService : AccessibilityService() {
+    private lateinit var usage: DailyPhoneUsage
     private lateinit var focus: FocusSession
     private lateinit var unlockPause: UnlockPause
     private var essentials = emptySet<String>()
@@ -37,6 +38,10 @@ class MyAccessibilityService : AccessibilityService() {
     }
     private val tick = object : Runnable {
         override fun run() {
+            val unlocked = getSystemService(PowerManager::class.java).isInteractive && !getSystemService(KeyguardManager::class.java).isKeyguardLocked
+            val live = rootInActiveWindow?.packageName?.toString()
+            if (live != null && live !in keyboards && live != "com.android.systemui") foreground = live
+            usage.sample(unlocked, foreground, focus.active)
             guard()
             handler.postDelayed(this, 500)
         }
@@ -45,6 +50,7 @@ class MyAccessibilityService : AccessibilityService() {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int) = START_STICKY
 
     override fun onServiceConnected() {
+        usage = DailyPhoneUsage(this)
         focus = FocusSession(this)
         unlockPause = UnlockPause(this)
         essentials = focus.essentialApps()

@@ -194,7 +194,7 @@
     <string translatable="false" name="wallpaper_polar">Polar day / night</string>
     <string translatable="false" name="wallpaper_earth">Earth · daily satellite view</string>
     <string translatable="false" name="wallpaper_earth_detail">Earth mode downloads a small NASA Blue Marble mosaic crop, then keeps it for day and night. A new date picks a new location. This is historical satellite imagery. Offline, you get a generated landscape until the download succeeds. Imagery: NASA / GSFC / Reto Stöckli.</string>
-    <string translatable="false" name="focus_service_description">Blocks apps outside three daily slots and shows a ten-second black screen after unlock. Calls and incoming texts skip that wait. Tracks screen off and unlock times for the morning wait. Chosen apps, calls, alarms, the keyboard and Settings stay available.</string>
+    <string translatable="false" name="focus_service_description">Blocks apps outside three daily slots and shows a ten-second usage and deadline view after unlock. Calls and incoming texts skip that wait. Tracks screen off and unlock times for the morning wait. Chosen apps, calls, alarms, the keyboard and Settings stay available.</string>
     <string name="pause_menu" translatable="false">Pause</string>
     <string name="pause_menu_off" translatable="false">Unpause</string>
     <string name="pause_enabled" translatable="false">%1$s will ask you to breathe first</string>
@@ -218,7 +218,7 @@
     <string translatable="false" name="daily_choose_apps">1   Choose always available apps</string>
     <string translatable="false" name="daily_choose_notifications">2   Choose apps that may notify you</string>
     <string translatable="false" name="daily_access_title">Access</string>
-    <string translatable="false" name="daily_lock_choices">Lock these choices</string>
+    <string translatable="false" name="daily_lock_choices">Finish setup</string>
     <string translatable="false" name="daily_back">Home</string>
     <string translatable="false" name="daily_wake_detail">The first unlock after 04:00 starts a 30-minute morning wait. So does unlocking after at least four hours with the screen off. This estimates wake time; the phone cannot know when you wake. Essentials and calls stay available. A reboot starts a fresh wait. Ticking a morning task does not shorten it.</string>
     <string translatable="false" name="daily_quiet_detail">Quiet time uses a separate Do Not Disturb rule. Calls and alarms may ring. Chosen app alerts come through the launcher with their open and reply actions. Other notifications stay hidden until a slot starts. Turn off other apps’ “Override Do Not Disturb” channels, which Android can still let through. Other DND modes may also silence chosen alerts.</string>
@@ -236,5 +236,5 @@
     <string translatable="false" name="deadline_edit">Edit</string>
     <string translatable="false" name="deadline_title">Title</string>
     <string translatable="false" name="deadline_search">Search</string>
-    <string translatable="false" name="unlock_pause_detail">Each unlock starts a blank 10-second pause. Calls and incoming texts skip it; a call or text arriving during the wait ends it. A text does not change your app or notification choices.</string>
+    <string translatable="false" name="unlock_pause_detail">Each unlock starts a 10-second usage and deadline view. Calls and incoming texts skip it; a call or text arriving during the wait ends it. A text does not change your app or notification choices.</string>
 </resources>

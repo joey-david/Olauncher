@@ -30,8 +30,37 @@ class DailyBudgetTest {
         focus.saveChoices(setOf("chosen.app"), setOf("notify.app"))
         assertEquals(setOf("chosen.app"), FocusSession(context).allowedApps)
         assertEquals(setOf("notify.app"), FocusSession(context).notificationApps)
-        assertFalse(focus.locks("org.mozilla.firefox", focus.essentialApps()))
+        assertTrue(focus.locks("org.mozilla.firefox", focus.essentialApps()))
         assertTrue(focus.needsSetup)
+    }
+
+    @Test fun savedChoicesBlockImmediatelyAndMorningHasItsOwnAllowlist() {
+        prefs.edit().clear().commit()
+        focus.saveChoices(setOf("day.app"), emptySet())
+        focus.noteUnlock()
+        focus.morningApps = setOf("morning.app")
+        val essentials = focus.essentialApps()
+        assertTrue(focus.locks("day.app", essentials))
+        assertFalse(focus.locks("morning.app", essentials))
+        assertTrue(focus.locks("blocked.app", essentials))
+        elapsed += FocusSession.MORNING_MS
+        assertFalse(focus.locks("day.app", essentials))
+        assertTrue(focus.locks("morning.app", essentials))
+        assertTrue(focus.needsSetup)
+    }
+
+    @Test fun remindersCountOnlyContinuousUnlockedTimeOutsideSlots() {
+        var clock = 0L
+        var reminders = 0
+        val usage = app.olauncher.helper.DailyPhoneUsage(context, { clock }, { reminders++ })
+        repeat(60) { clock += 2000; usage.sample(true, context.packageName, false) }
+        assertEquals(1, reminders)
+        repeat(60) { clock += 2000; usage.sample(true, context.packageName, true) }
+        assertEquals(1, reminders)
+        repeat(60) { clock += 2000; usage.sample(false, context.packageName, false) }
+        assertEquals(1, reminders)
+        repeat(60) { clock += 2000; usage.sample(true, context.packageName, false) }
+        assertEquals(2, reminders)
     }
 
     @Test fun waitsFullThirtyMinutesAndTaskTicksCannotSkipIt() {
@@ -100,6 +129,7 @@ class DailyBudgetTest {
     @Test fun newAppsAreBlockedAndOldFocusTimersCannotGrantAccess() {
         prefs.edit().putLong("end", Long.MAX_VALUE).putInt("boot", 12).commit()
         val essentials = focus.essentialApps()
+        awake()
         assertFalse(focus.locks("chosen.app", essentials))
         assertTrue(focus.locks("newly.installed.app", essentials))
         assertFalse(focus.locks("com.android.settings", essentials))

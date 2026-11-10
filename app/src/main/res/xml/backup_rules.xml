@@ -8,6 +8,7 @@
 <full-backup-content>
     <exclude domain="sharedpref" path="focus.xml" />
         <exclude domain="sharedpref" path="notification_inbox.xml" />
+        <exclude domain="sharedpref" path="phone_usage.xml" />
     <!--
    <include domain="sharedpref" path="."/>
    <exclude domain="sharedpref" path="device.xml"/>
