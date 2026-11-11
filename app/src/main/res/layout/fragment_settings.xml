@@ -9,6 +9,7 @@
                 </FrameLayout>
                 <TextView android:id="@+id/setLauncher" style="@style/TextSmall" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="8dp" android:layout_marginTop="18dp" android:layout_marginBottom="8dp" android:text="@string/set_as_default_launcher" />
                 <TextView android:id="@+id/aboutOlauncher" style="@style/TextSmall" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="8dp" android:layout_marginTop="16dp" android:layout_marginBottom="8dp" android:drawablePadding="8dp" android:gravity="center" android:text="@string/about_olauncher" />
+                <Button android:id="@+id/checkUpdates" style="@style/DailyButton" android:text="@string/updates_check" />
             </LinearLayout>
             <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginHorizontal="12dp" android:layout_marginTop="12dp" android:orientation="vertical" android:paddingHorizontal="12dp" android:paddingVertical="16dp" tools:visibility="visible">
                 <TextView style="@style/TextLarge" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="8dp" android:layout_marginTop="8dp" android:layout_marginBottom="4dp" android:text="@string/home_screen" android:textColor="?attr/primaryColor" />
@@ -39,17 +40,9 @@
                     <TextView style="@style/TextSmall" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="8dp" android:layout_marginEnd="80dp" android:paddingVertical="8dp" android:text="@string/auto_show_keyboard" android:textColor="?attr/primaryColor" />
                     <TextView android:id="@+id/autoShowKeyboard" style="@style/TextSmallBold" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_gravity="end|bottom" android:layout_marginEnd="4dp" android:padding="8dp" android:text="@string/on" />
                 </FrameLayout>
-                <FrameLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="12dp">
-                    <TextView android:id="@+id/dailyWallpaperUrl" style="@style/TextSmall" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="8dp" android:paddingVertical="8dp" android:text="@string/daily_wallpaper_update" />
-                    <TextView android:id="@+id/dailyWallpaper" style="@style/TextSmallBold" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_gravity="end|bottom" android:layout_marginEnd="4dp" android:padding="8dp" android:text="@string/off" />
-                </FrameLayout>
                 <FrameLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="16dp">
                     <TextView style="@style/TextSmall" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="8dp" android:paddingVertical="8dp" android:text="@string/notification_bar" android:textColor="?attr/primaryColor" />
                     <TextView android:id="@+id/statusBar" style="@style/TextSmallBold" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_gravity="end|bottom" android:layout_marginEnd="4dp" android:padding="8dp" android:text="@string/off" />
-                </FrameLayout>
-                <FrameLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="12dp">
-                    <TextView style="@style/TextSmall" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="8dp" android:paddingVertical="8dp" android:text="@string/theme_mode" android:textColor="?attr/primaryColor" />
-                    <TextView android:id="@+id/appThemeText" style="@style/TextSmallBold" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_gravity="end|bottom" android:layout_marginEnd="4dp" android:padding="8dp" android:text="@string/dark" />
                 </FrameLayout>
                 <FrameLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="12dp">
                     <TextView style="@style/TextSmall" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="8dp" android:paddingVertical="8dp" android:text="@string/bold_font" android:textColor="?attr/primaryColor" />

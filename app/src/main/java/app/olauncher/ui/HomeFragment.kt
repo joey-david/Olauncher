@@ -209,7 +209,7 @@ class HomeFragment : BaseFragment(), View.OnClickListener, View.OnLongClickListe
             android.service.notification.NotificationListenerService.requestRebind(android.content.ComponentName(requireContext(), QuietNotifications::class.java))
         }
         QuietMode.sync(requireContext())
-        binding.root.setBackgroundColor(if (prefs.dailyWallpaper) android.graphics.Color.TRANSPARENT else requireContext().getColor(app.olauncher.R.color.black))
+        binding.root.setBackgroundColor(android.graphics.Color.BLACK)
         populateHomeScreen(false)
         checkNewApps()
         updateFocus()

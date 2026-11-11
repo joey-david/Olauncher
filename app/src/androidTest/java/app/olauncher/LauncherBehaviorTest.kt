@@ -27,6 +27,7 @@ class LauncherBehaviorTest {
         context.getSharedPreferences("mindful_pause", Context.MODE_PRIVATE).edit().clear().commit()
         context.getSharedPreferences("focus", Context.MODE_PRIVATE).edit().clear().commit()
         focus.configure(setOf("com.android.camera2"), emptySet())
+        app.olauncher.helper.FocusSession(context).morningApps = setOf("com.android.camera2")
         Prefs(context).apply {
             firstOpen = false; firstSettingsOpen = false
             dailyWallpaper = false; hideSetDefaultLauncher = true; homeAppsNum = 4
@@ -89,4 +90,13 @@ class LauncherBehaviorTest {
         assertFalse(device.hasObject(By.res(context.packageName, "clock2")))
         assertFalse(device.hasObject(By.res(context.packageName, "focusToggle")))
     }
+    @Test fun settingsHasUpdaterAndNoWallpaperMenu() {
+        home()
+        device.findObject(By.res(context.packageName, "mainLayout")).longClick()
+        assertTrue(device.wait(Until.hasObject(By.res(context.packageName, "scrollView")), 5000))
+        assertFalse(device.hasObject(By.res(context.packageName, "dailyWallpaper")))
+        assertFalse(device.hasObject(By.res(context.packageName, "appThemeText")))
+        assertTrue(device.hasObject(By.res(context.packageName, "checkUpdates")))
+    }
+
 }

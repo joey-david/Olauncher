@@ -74,7 +74,9 @@ class MainActivity : AppCompatActivity() {
             prefs.showStatusBar = false
             prefs.minimalDesignApplied = true
         }
-        AppCompatDelegate.setDefaultNightMode(prefs.appTheme)
+        prefs.appTheme = AppCompatDelegate.MODE_NIGHT_YES
+        prefs.dailyWallpaper = false
+        AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES)
         super.onCreate(savedInstanceState)
         if (prefs.boldFont) theme.applyStyle(R.style.BoldFontOverlay, true)
         if (isEinkDisplay() || isSystemAnimationsDisabled()) theme.applyStyle(R.style.NoAnimationOverlay, true)
@@ -83,7 +85,7 @@ class MainActivity : AppCompatActivity() {
 
         navController = this.findNavController(R.id.nav_host_fragment)
         viewModel = ViewModelProvider(this)[MainViewModel::class.java]
-        if (applyMinimalDesign) viewModel.cancelWallpaperWorker()
+        viewModel.cancelWallpaperWorker()
 
         val onBackPressedCallback = object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {

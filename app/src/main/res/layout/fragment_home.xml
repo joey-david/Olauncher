@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android" xmlns:tools="http://schemas.android.com/tools" android:id="@+id/mainLayout" android:layout_width="match_parent" android:layout_height="match_parent" android:orientation="vertical" tools:context=".ui.HomeFragment">
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android" xmlns:tools="http://schemas.android.com/tools" android:id="@+id/mainLayout" android:background="@android:color/black" android:layout_width="match_parent" android:layout_height="match_parent" android:orientation="vertical" tools:context=".ui.HomeFragment">
     <FrameLayout android:id="@+id/lock" android:layout_width="match_parent" android:layout_height="1dp" android:contentDescription="@string/lock_layout_description" />
     <LinearLayout android:id="@+id/dateTimeLayout" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginHorizontal="24dp" android:layout_marginTop="56dp" android:orientation="vertical">
         <LinearLayout android:id="@+id/clockBox" android:layout_width="wrap_content" android:layout_height="wrap_content" android:orientation="vertical">

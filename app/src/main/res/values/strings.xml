@@ -237,4 +237,5 @@
     <string translatable="false" name="deadline_title">Title</string>
     <string translatable="false" name="deadline_search">Search</string>
     <string translatable="false" name="unlock_pause_detail">Each unlock starts a 10-second usage and deadline view. Calls and incoming texts skip it; a call or text arriving during the wait ends it. A text does not change your app or notification choices.</string>
+    <string name="updates_check" translatable="false">Check for updates</string>
 </resources>

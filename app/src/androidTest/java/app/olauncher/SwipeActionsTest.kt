@@ -32,6 +32,7 @@ class SwipeActionsTest {
         context.getSharedPreferences("mindful_pause", Context.MODE_PRIVATE).edit().clear().commit()
         context.getSharedPreferences("focus", Context.MODE_PRIVATE).edit().clear().commit()
         app.olauncher.helper.FocusSession(context).configure(setOf("com.android.camera2"), emptySet())
+        app.olauncher.helper.FocusSession(context).morningApps = setOf("com.android.camera2")
         Prefs(context).apply {
             firstOpen = false
             firstSettingsOpen = false

@@ -23,6 +23,8 @@ Quiet time uses its own Do Not Disturb rule. Turn off other apps' existing DND o
 
 This is a personal launcher, not device management: Android still lets its owner revoke access, clear app data, or change the launcher. Notification copies stay on the device and do not enter Android backups.
 
+Settings → Check for updates checks this repository for a newer APK. Download it, then use the same control to open Android’s installer. Android may first ask you to allow installs from Focus Launcher. The launcher stays black; wallpaper and theme menus are removed.
+
 ## Build and check
 
 Use JDK 21 and Android SDK 37. Set the SDK path in `local.properties`.

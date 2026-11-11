@@ -16,8 +16,8 @@ android {
         applicationId "app.olauncher.focus"
         minSdkVersion 29
         targetSdkVersion 36
-        versionCode 122
-        versionName "1.5.1"
+        versionCode 123
+        versionName "1.5.2"
         resValue "string", "launcher_name", "Focus Launcher"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
