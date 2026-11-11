@@ -24,7 +24,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 fun dailyProtectionReady(context: Context): Boolean = isOlauncherDefault(context) &&
-    MyAccessibilityService.isConnected && QuietNotifications.isConnected && QuietMode.isReady(context) && QuietMode.hasExactAlarms(context)
+    MyAccessibilityService.enabled(context) && QuietNotifications.hasAccess(context) && QuietMode.isReady(context) && QuietMode.hasExactAlarms(context)
 
 /** Choices are editable once per version; access repairs stay available afterwards. */
 class DailySetupActivity : AppCompatActivity() {
@@ -63,7 +63,7 @@ class DailySetupActivity : AppCompatActivity() {
         binding.chooseNotifications.setOnClickListener { choose(true) }
         binding.accessHome.setOnClickListener { startActivity(Intent(Settings.ACTION_HOME_SETTINGS)) }
         binding.accessGuard.setOnClickListener {
-            explain("App guard", "Enable Focus Launcher in Accessibility to block apps and apply the unlock pause. Calls stay available.", Settings.ACTION_ACCESSIBILITY_SETTINGS)
+            explain("App guard", "Enable Focus Launcher in Accessibility. On Xiaomi, also allow Autostart and set battery use to No restrictions in App info. Calls and permission screens stay available.", Settings.ACTION_ACCESSIBILITY_SETTINGS)
         }
         binding.accessInbox.setOnClickListener {
             explain("Inbox", "If Android marks this app as restricted: open App info, tap the three-dot menu, then Allow restricted settings. Return here and enable notification access. Held text stays on this phone and is not backed up.", Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)
@@ -73,6 +73,7 @@ class DailySetupActivity : AppCompatActivity() {
             else explain("Quiet time", getString(R.string.daily_quiet_detail), Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS)
         }
         binding.accessAlerts.setOnClickListener {
+            focus.beginAccessRepair()
             if (Build.VERSION.SDK_INT >= 33 && !QuietMode.alertsEnabled(this)) {
                 requestAlerts.launch(Manifest.permission.POST_NOTIFICATIONS)
             } else startActivity(Intent(Settings.ACTION_CHANNEL_NOTIFICATION_SETTINGS)
@@ -116,6 +117,11 @@ class DailySetupActivity : AppCompatActivity() {
             refresh()
         }
         lifecycleScope.launch { while (true) { refresh(); delay(1000) } }
+    }
+
+    override fun startActivity(intent: Intent) {
+        if (::focus.isInitialized && intent.action?.startsWith("android.settings.") == true) focus.beginAccessRepair()
+        super.startActivity(intent)
     }
 
     override fun onResume() {
@@ -165,16 +171,15 @@ class DailySetupActivity : AppCompatActivity() {
         val labels = { selected: Set<String> -> apps.filter { it.appPackage in selected }.joinToString { it.appLabel }.ifBlank { "None" } }
         binding.chosenSummary.text = "Outside slots: ${labels(allowed)}\nAlerts: ${labels(notifications)}\nRestricted settings? Tap for App info."
         access(binding.accessHome, "Launcher", isOlauncherDefault(this))
-        access(binding.accessGuard, "App guard", MyAccessibilityService.isConnected)
-        access(binding.accessInbox, "Inbox", QuietNotifications.isConnected)
-        access(binding.accessQuiet, "Do Not Disturb", QuietMode.isReady(this))
+        access(binding.accessGuard, if (MyAccessibilityService.enabled(this) && !MyAccessibilityService.isConnected) "App guard · reconnecting" else "App guard", MyAccessibilityService.enabled(this))
+        access(binding.accessInbox, if (QuietNotifications.hasAccess(this) && !QuietNotifications.isConnected) "Inbox · reconnecting" else "Inbox", QuietNotifications.hasAccess(this))
+        access(binding.accessQuiet, "Do Not Disturb", QuietMode.hasPolicyAccess(this))
         access(binding.accessAlerts, "Alerts", QuietMode.alertsEnabled(this))
         access(binding.accessTimer, "Timer", QuietMode.hasExactAlarms(this))
         binding.setupWarning.visibility = if (QuietNotifications.bypassWarnings().isEmpty()) android.view.View.GONE else android.view.View.VISIBLE
         binding.setupWarning.text = "DND overrides: " + QuietNotifications.bypassWarnings().joinToString { it.first }
         binding.lockChoices.visibility = if (editable) android.view.View.VISIBLE else android.view.View.GONE
-        binding.lockChoices.isEnabled = choseAllowed && choseNotifications && dailyProtectionReady(this)
-        if (editable && !dailyProtectionReady(this)) binding.lockChoices.text = "Enable access first"
-        else binding.lockChoices.setText(R.string.daily_lock_choices)
+        binding.lockChoices.isEnabled = choseAllowed && choseNotifications
+        binding.lockChoices.setText(R.string.daily_lock_choices)
     }
 }

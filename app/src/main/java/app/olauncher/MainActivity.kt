@@ -147,7 +147,11 @@ class MainActivity : AppCompatActivity() {
         val launcherApps = getSystemService(LauncherApps::class.java)
         launcherAppsCallback = object : LauncherApps.Callback() {
             override fun onPackageRemoved(packageName: String, user: android.os.UserHandle) { viewModel.getAppList(force = true) }
-            override fun onPackageAdded(packageName: String, user: android.os.UserHandle) { viewModel.getAppList(force = true) }
+            override fun onPackageAdded(packageName: String, user: android.os.UserHandle) {
+                viewModel.getAppList(force = true)
+                val host = supportFragmentManager.findFragmentById(R.id.nav_host_fragment)
+                (host?.childFragmentManager?.primaryNavigationFragment as? app.olauncher.ui.HomeFragment)?.checkNewApps()
+            }
             override fun onPackageChanged(packageName: String, user: android.os.UserHandle) { viewModel.getAppList(force = true) }
             override fun onPackagesAvailable(
                 packageNames: Array<out String>,

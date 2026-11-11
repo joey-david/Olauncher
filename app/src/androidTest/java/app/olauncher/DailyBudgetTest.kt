@@ -63,6 +63,29 @@ class DailyBudgetTest {
         assertEquals(2, reminders)
     }
 
+    @Test fun newlyInstalledAppGetsExactlyOneIndependentChoice() {
+        prefs.edit().putStringSet("knownApps", emptySet()).commit()
+        val pkg = focus.pendingApps().firstOrNull() ?: return
+        focus.classifyApp(pkg, true, false, true)
+        assertTrue(pkg in focus.allowedApps)
+        assertTrue(pkg in focus.notificationApps)
+        assertFalse(pkg in focus.pendingApps())
+        focus.classifyApp(pkg, false, true, false)
+        assertTrue(pkg in focus.allowedApps)
+        assertFalse(pkg in focus.morningApps)
+    }
+
+    @Test fun accessRepairIsBoundedAndDoesNotSpendASlot() {
+        awake()
+        focus.beginAccessRepair()
+        assertTrue(focus.repairingAccess)
+        assertEquals(3, focus.slotsLeft)
+        assertFalse(focus.locks("com.android.settings", focus.essentialApps()))
+        assertTrue(focus.locks("some.thirdparty.app", focus.essentialApps()))
+        elapsed += 5 * 60_000L
+        assertFalse(focus.repairingAccess)
+    }
+
     @Test fun waitsFullThirtyMinutesAndTaskTicksCannotSkipIt() {
         focus.noteUnlock()
         repeat(3) { focus.toggleMorningStep(it) }
@@ -121,9 +144,10 @@ class DailyBudgetTest {
         assertFalse(focus.configure(setOf("other.app"), emptySet()))
         assertEquals(setOf("chosen.app"), focus.allowedApps)
         prefs.edit().putInt("configuredVersion", BuildConfig.VERSION_CODE - 1).commit()
-        assertFalse("An update needs new choices before a slot", focus.start())
+        assertTrue("An update must not disable slots", focus.start())
+        focus.finish()
         assertTrue(focus.configure(setOf("other.app"), emptySet()))
-        assertEquals(2, focus.slotsLeft)
+        assertEquals(1, focus.slotsLeft)
     }
 
     @Test fun newAppsAreBlockedAndOldFocusTimersCannotGrantAccess() {

@@ -13,9 +13,11 @@ A black-and-white Android launcher with three 10-minute slots a day.
 
 Outside slots, a reminder appears every two minutes of continuous unlocked use.
 
+Installed apps get a one-time choice for slots-only, outside-slot access, morning access, and alerts.
+
 ## Setup
 
-Open **Rules** and choose **Apps** and **Alerts**. Grant the listed Android access, then lock your choices. You can repair access later; changing the choices requires a launcher version update.
+Open **Rules** and choose **Apps** and **Alerts**. Finish your choices independently of Android access. Repair controls stay separate from slot use. System access-repair screens get a five-minute grace period; no slot is spent. On Xiaomi, allow Autostart and set battery use to No restrictions in App info. You can repair access later; changing the choices requires a launcher version update.
 
 Quiet time uses its own Do Not Disturb rule. Turn off other apps' existing DND overrides. Other DND modes can also silence chosen alerts. While a blocked app has a live call notification, its call UI can open. Actual call behavior depends on the calling app and phone; the emulator tests use a separate app's synthetic call notifications.
 

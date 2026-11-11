@@ -141,6 +141,7 @@ class QuietConditionService : ConditionProviderService() {
 class DailySlotReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         val focus = FocusSession(context)
+        if (intent.action == Intent.ACTION_MY_PACKAGE_REPLACED && focus.configured) focus.pendingApps()
         val matches = intent.getLongExtra("end", -1) == focus.endElapsed
         if (matches && (intent.action == QuietMode.FINISH_SLOT ||
                 (intent.action == QuietMode.END_SLOT && !focus.active))) focus.finish()

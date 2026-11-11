@@ -94,6 +94,7 @@ class MyAccessibilityService : AccessibilityService() {
         if (!::focus.isInitialized) return
         if (event.eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) {
             val pkg = event.packageName?.toString().orEmpty()
+            if (pkg == "com.android.settings") focus.beginAccessRepair()
             if (pkg !in keyboards && pkg != "com.android.systemui") foreground = pkg
             guard()
             return

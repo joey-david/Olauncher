@@ -39,8 +39,35 @@ class FocusSession(
         if (!needsSetup) return false
         prefs.edit().putStringSet("allowed", allowed.toSet())
             .putStringSet("notifications", notifications.toSet())
+            .putStringSet("knownApps", installedApps())
             .putInt("configuredVersion", BuildConfig.VERSION_CODE).commit()
     }
+
+    private fun installedApps(): Set<String> = context.packageManager.queryIntentActivities(
+        android.content.Intent(android.content.Intent.ACTION_MAIN).addCategory(android.content.Intent.CATEGORY_LAUNCHER), 0)
+        .map { it.activityInfo.packageName }.toSet()
+
+    fun pendingApps(): Set<String> = synchronized(lock) {
+        val installed = installedApps()
+        if (!prefs.contains("knownApps")) {
+            prefs.edit().putStringSet("knownApps", installed).commit()
+            return emptySet()
+        }
+        installed - prefs.getStringSet("knownApps", emptySet())!! - essentialApps()
+    }
+
+    fun classifyApp(pkg: String, outside: Boolean, morning: Boolean, alerts: Boolean) = synchronized(lock) {
+        if (pkg !in pendingApps()) return@synchronized false
+        prefs.edit().putStringSet("allowed", if (outside) allowedApps + pkg else allowedApps - pkg)
+            .putStringSet("morningApps", if (morning) morningApps + pkg else morningApps - pkg)
+            .putStringSet("notifications", if (alerts) notificationApps + pkg else notificationApps - pkg)
+            .putStringSet("knownApps", prefs.getStringSet("knownApps", emptySet())!! + pkg).commit()
+    }
+
+    fun beginAccessRepair() {
+        prefs.edit().putLong("repairUntil", elapsed() + 5 * 60_000L).putInt("repairBoot", boot).commit()
+    }
+    val repairingAccess: Boolean get() = prefs.getInt("repairBoot", -1) == boot && prefs.getLong("repairUntil", 0) > elapsed()
 
     private fun refreshDay() {
         val today = date().toString()
@@ -92,7 +119,7 @@ class FocusSession(
 
     /** Starts exactly one slot. A caller must also check the Android access grants. */
     fun start(): Boolean = synchronized(lock) {
-        if (!configured || needsSetup || active || morningRemaining > 0 || slotsLeft == 0) return false
+        if (!configured || active || morningRemaining > 0 || slotsLeft == 0) return false
         prefs.edit().putInt("used", prefs.getInt("used", 0) + 1)
             .putInt("slotBoot", boot).putLong("slotEnd", elapsed() + SLOT_MS).commit()
     }
@@ -104,7 +131,12 @@ class FocusSession(
         add(context.packageName)
         add("android")
         add("com.android.systemui")
+        runCatching { getDefaultLauncherPackage(context) }.getOrNull()?.let(::add)
         add("com.android.settings")
+        // Xiaomi hosts permission warnings outside Android Settings.
+        listOf("com.miui.securitycenter", "com.miui.securityadd", "com.miui.permcenter", "com.lbe.security.miui", "com.miui.packageinstaller")
+            .filter { pkg -> runCatching { context.packageManager.getApplicationInfo(pkg, 0).flags and android.content.pm.ApplicationInfo.FLAG_SYSTEM != 0 }.getOrDefault(false) }
+            .forEach { add(it) }
         add("com.android.phone")
         add("com.android.server.telecom")
         add("com.android.emergency")
@@ -121,10 +153,15 @@ class FocusSession(
             .enabledInputMethodList.forEach { add(it.packageName) }
     }
 
+    fun isSystemPackage(pkg: String): Boolean = runCatching {
+        context.packageManager.getApplicationInfo(pkg, 0).flags and android.content.pm.ApplicationInfo.FLAG_SYSTEM != 0
+    }.getOrDefault(false)
+
     /** New installs and apps installed later are blocked unless explicitly chosen. */
     fun locks(packageName: String, essentials: Set<String>): Boolean =
         (configured || prefs.contains("allowed")) && packageName.isNotBlank() && !active &&
-            packageName !in (if (morningRemaining > 0) morningApps else allowedApps) && packageName !in essentials
+            packageName !in (if (morningRemaining > 0) morningApps else allowedApps) && packageName !in essentials &&
+            !(repairingAccess && isSystemPackage(packageName))
 
     val blockedMessage: String get() = when {
         !configured -> "Choose your apps first"

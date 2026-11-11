@@ -48,6 +48,13 @@ class UnlockPause(private val service: AccessibilityService) {
     }
 
     fun unlocked() {
+        val focus = FocusSession(service)
+        val pkg = service.rootInActiveWindow?.packageName?.toString()
+        if (focus.repairingAccess && pkg != null && pkg != service.packageName && focus.isSystemPackage(pkg)) {
+            prefs.edit().putBoolean("unlockArmed", false).putInt("unlockBoot", boot).putLong("unlockEnd", 0).commit()
+            hide()
+            return
+        }
         if (QuietNotifications.maySkipUnlock(service)) { communicationArrived(); return }
         val now = SystemClock.elapsedRealtime()
         val newUnlock = prefs.getBoolean("unlockArmed", true) || prefs.getInt("unlockBoot", -1) != boot

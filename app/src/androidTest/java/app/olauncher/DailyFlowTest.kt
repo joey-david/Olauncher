@@ -272,4 +272,17 @@ class DailyFlowTest {
         context.getSharedPreferences("deadlines", Context.MODE_PRIVATE).edit().clear().commit()
     }
 
+    @Test fun revokedNotificationAccessCannotHideOrDisableSlots() {
+        shell("cmd notification disallow_listener ${context.packageName}/app.olauncher.helper.QuietNotifications")
+        await("Notification access must be revoked", { !QuietNotifications.hasAccess(context) })
+        home()
+        val action = device.findObject(By.res(context.packageName, "slotAction"))
+        assertTrue(action.isEnabled)
+        assertTrue(action.text, action.text.contains("Use a 10-minute slot"))
+        action.click()
+        device.wait(Until.findObject(By.res("android", "button1")), 3000).click()
+        await("A slot must start without notification access", { focus.active })
+        assertEquals(2, focus.slotsLeft)
+    }
+
 }

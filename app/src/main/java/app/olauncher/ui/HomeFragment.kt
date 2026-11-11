@@ -123,16 +123,15 @@ class HomeFragment : BaseFragment(), View.OnClickListener, View.OnLongClickListe
         val left = focus.slotsLeft
         val ready = dailyProtectionReady(requireContext())
         binding.slotAction.text = when {
-            focus.needsSetup -> if (focus.configured) "Setup" else getString(R.string.daily_configure)
+            !focus.configured -> getString(R.string.daily_configure)
             remaining > 0 -> "${FocusSession.clock(remaining)}  ·  Inbox"
-            !ready -> getString(R.string.daily_repair)
             left == 0 -> "No slots left"
             morning > 0 -> "Morning routine"
             else -> "Use a 10-minute slot  ·  $left left"
         }
-        binding.slotAction.isEnabled = focus.needsSetup || remaining > 0 || !ready || left > 0
-        binding.protectionStatus.isVisible = !ready || QuietNotifications.bypassWarnings().isNotEmpty()
-        binding.protectionStatus.text = if (QuietNotifications.bypassWarnings().isNotEmpty()) "DND overrides" else "Access required"
+        binding.slotAction.isEnabled = !focus.configured || remaining > 0 || left > 0
+        binding.protectionStatus.isVisible = !ready || !app.olauncher.helper.MyAccessibilityService.isConnected || !QuietNotifications.isConnected || QuietNotifications.bypassWarnings().isNotEmpty()
+        binding.protectionStatus.text = if (QuietNotifications.bypassWarnings().isNotEmpty()) "DND overrides" else if (!app.olauncher.helper.isOlauncherDefault(requireContext())) "Set default launcher" else if (!app.olauncher.helper.MyAccessibilityService.isConnected) "App guard disconnected" else if (!QuietNotifications.isConnected) "Inbox disconnected" else "Repair alerts"
         val deadline = DeadlineStore(requireContext()).next()
         binding.deadlinePanel.deadlineTitle.text = deadline?.title ?: "Deadlines"
         binding.deadlinePanel.deadlineDate.isVisible = deadline != null
@@ -144,19 +143,32 @@ class HomeFragment : BaseFragment(), View.OnClickListener, View.OnLongClickListe
 
     fun closeDailyDialog() { dailyDialog?.dismiss(); dailyDialog = null }
 
+    fun checkNewApps() {
+        if (!isAdded || !focus.configured || dailyDialog?.isShowing == true) return
+        val pkg = focus.pendingApps().sorted().firstOrNull() ?: return
+        val name = runCatching { requireContext().packageManager.getApplicationInfo(pkg, 0).loadLabel(requireContext().packageManager).toString() }.getOrDefault(pkg)
+        val selected = booleanArrayOf(false, false, false)
+        dailyDialog = AlertDialog.Builder(requireContext()).setTitle(name)
+            .setMultiChoiceItems(arrayOf("Allowed outside slots", "Allowed during morning", "May send alerts"), selected) { _, i, checked -> selected[i] = checked }
+            .setNegativeButton("Later", null).setPositiveButton("Save once") { _, _ ->
+                focus.classifyApp(pkg, selected[0], selected[1], selected[2])
+                dailyDialog = null
+                binding.root.post { checkNewApps() }
+            }.show()
+    }
+
     private fun useSlot() {
         closeDailyDialog()
         when {
-            focus.needsSetup -> startActivity(Intent(requireContext(), DailySetupActivity::class.java))
+            !focus.configured -> startActivity(Intent(requireContext(), DailySetupActivity::class.java))
             focus.active -> startActivity(Intent(requireContext(), NotificationInboxActivity::class.java))
-            !dailyProtectionReady(requireContext()) -> startActivity(Intent(requireContext(), DailySetupActivity::class.java))
             focus.slotsLeft == 0 -> Unit
             focus.morningRemaining > 0 -> showMorning()
             else -> dailyDialog = AlertDialog.Builder(requireContext()).setTitle("Use slot ${FocusSession.SLOTS - focus.slotsLeft + 1} of ${FocusSession.SLOTS}?")
                 .setMessage("10 minutes start now. The timer keeps running when you switch apps or lock the phone. Ending early does not return the slot.")
                 .setNegativeButton("Not now", null).setPositiveButton("Start 10-minute slot") { _, _ ->
                     QuietNotifications.captureForSlot()
-                    if (dailyProtectionReady(requireContext()) && focus.start()) {
+                    if (focus.start()) {
                         QuietMode.sync(requireContext())
                         updateFocus()
                         startActivity(Intent(requireContext(), NotificationInboxActivity::class.java))
@@ -193,9 +205,13 @@ class HomeFragment : BaseFragment(), View.OnClickListener, View.OnLongClickListe
         super.onResume()
         val keyguard = requireContext().getSystemService(android.app.KeyguardManager::class.java)
         if (!keyguard.isKeyguardLocked) focus.noteUnlock()
+        if (QuietNotifications.hasAccess(requireContext()) && !QuietNotifications.isConnected) runCatching {
+            android.service.notification.NotificationListenerService.requestRebind(android.content.ComponentName(requireContext(), QuietNotifications::class.java))
+        }
         QuietMode.sync(requireContext())
         binding.root.setBackgroundColor(if (prefs.dailyWallpaper) android.graphics.Color.TRANSPARENT else requireContext().getColor(app.olauncher.R.color.black))
         populateHomeScreen(false)
+        checkNewApps()
         updateFocus()
         viewModel.isOlauncherDefault()
         if (prefs.showStatusBar) showStatusBar()
